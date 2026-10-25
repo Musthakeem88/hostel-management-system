@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hostel Management System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <aside class="side">
+    <h1 class="brand">Hostel<br>Management</h1>
+    <nav id="nav">
+      <button data-view="dashboard" class="active">Dashboard</button>
+      <button data-view="rooms">Rooms</button>
+      <button data-view="inspections">Inspections</button>
+      <button data-view="damage">Damage and fines</button>
+      <button data-view="repairs">Repairs</button>
+    </nav>
+  </aside>
+  <main class="main">
+    <header class="top"><h2 id="title">Dashboard</h2><span class="muted" id="today"></span></header>
+    <section id="view"></section>
+  </main>
+  <div id="toast" role="status"></div>
+  <script src="script.js"></script>
+</body>
+</html>

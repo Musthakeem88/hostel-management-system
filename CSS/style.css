@@ -1,0 +1,57 @@
+:root{--ink:#17292e;--teal:#0e6f69;--teal-l:#e3f1ef;--bg:#f4f6f5;--line:#d9e1df;--muted:#62767a;--amber:#b7791f;--amber-l:#fbf0d9;--red:#b42318;--red-l:#fde8e6;--green:#1f7a3d;--green-l:#e2f4e8;--r:8px}
+*{box-sizing:border-box;margin:0}
+body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);display:grid;grid-template-columns:230px 1fr;min-height:100vh;line-height:1.5}
+.side{background:var(--ink);color:#fff;padding:28px 18px;position:sticky;top:0;height:100vh}
+.brand{font-size:1.3rem;font-weight:700;line-height:1.25;margin-bottom:32px;padding-left:12px}
+#nav{display:flex;flex-direction:column;gap:4px}
+#nav button{background:none;border:0;color:#b9c8ca;text-align:left;padding:11px 12px;border-radius:var(--r);font:inherit;cursor:pointer}
+#nav button:hover{background:#243b41;color:#fff}
+#nav button.active{background:var(--teal);color:#fff;font-weight:600}
+.main{padding:28px 36px;max-width:1150px;width:100%}
+.top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:24px;border-bottom:1px solid var(--line);padding-bottom:14px}
+.top h2{font-size:1.5rem}
+.muted{color:var(--muted);font-size:.9rem}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.stat b{display:block;font-size:1.9rem;line-height:1.1}
+.stat span{color:var(--muted);font-size:.9rem}
+.stat.warn b{color:var(--red)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:16px}
+.card h3{font-size:1.05rem;margin-bottom:14px}
+table{width:100%;border-collapse:collapse;font-size:.93rem}
+th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{color:var(--muted);font-weight:600;font-size:.85rem;background:#fafbfa}
+tr:last-child td{border-bottom:0}
+.num{text-align:right}
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.8rem;font-weight:600;background:var(--teal-l);color:var(--teal);white-space:nowrap}
+.badge.amber{background:var(--amber-l);color:var(--amber)}
+.badge.red{background:var(--red-l);color:var(--red)}
+.badge.green{background:var(--green-l);color:var(--green)}
+.bar{display:grid;grid-template-columns:110px 1fr 30px;gap:10px;align-items:center;margin-bottom:10px;font-size:.92rem}
+.bar i{display:block;height:10px;border-radius:5px;background:var(--teal)}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;align-items:end;margin-bottom:16px}
+label{display:flex;flex-direction:column;gap:5px;font-size:.88rem;color:var(--muted);font-weight:600}
+input,select{font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:var(--r);background:#fff;color:var(--ink)}
+button.btn{font:inherit;font-weight:600;padding:9px 16px;border:0;border-radius:var(--r);background:var(--teal);color:#fff;cursor:pointer}
+button.btn:hover{background:#0b5c57}
+button.btn.ghost{background:#fff;color:var(--teal);border:1px solid var(--teal)}
+button.btn.small{padding:5px 12px;font-size:.85rem}
+.items{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:16px}
+.notice{padding:12px 14px;border-radius:var(--r);background:var(--amber-l);color:#7a4f0f;margin-bottom:14px}
+.empty{color:var(--muted);padding:18px 0;text-align:center}
+.filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+#toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:#fff;padding:12px 18px;border-radius:var(--r);opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none}
+#toast.show{opacity:1;transform:none}
+.scroll{overflow-x:auto}
+:focus-visible{outline:3px solid #6bb8b1;outline-offset:2px}
+@media (max-width:860px){
+  body{grid-template-columns:1fr}
+  .side{position:static;height:auto;padding:14px}
+  .brand{margin-bottom:10px}
+  #nav{flex-direction:row;overflow-x:auto}
+  .main{padding:18px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .cols{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
