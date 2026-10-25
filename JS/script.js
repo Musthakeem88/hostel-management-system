@@ -1,4 +1,31 @@
 
+/* =========================================================
+   HOSTEL MANAGEMENT SYSTEM
+   Main/JS/script.js
+
+   Frontend:
+   HTML, CSS, Bootstrap-compatible classes, JavaScript
+
+   Backend APIs:
+   GET  /api/rooms
+   GET  /api/students
+   POST /api/students
+
+   Note:
+   Students and rooms use PostgreSQL.
+   Inspections, damages, fines and repairs currently use
+   browser memory and reset when the page is refreshed.
+========================================================= */
+
+const API_BASE = "/api";
+
+const $ = (selector) => document.querySelector(selector);
+
+const view = $("#view");
+const titleElement = $("#title");
+const nav = $("#nav");
+const toastElement = $("#toast");
+
 const ITEMS = [
   "Bed",
   "Mattress",
@@ -8,38 +35,46 @@ const ITEMS = [
   "Ceiling fan",
   "Tube light",
   "Window",
-  "Sink"
+  "Sink",
+  "Mirror"
 ];
 
 const CONDITIONS = ["Good", "Damaged", "Broken"];
 const FINE_FLOW = ["Pending", "Under Review", "Approved", "Paid"];
 const REPAIR_FLOW = ["Reported", "Assigned", "In Progress", "Completed"];
 
-// Rooms are loaded from PostgreSQL through the Node.js backend.
+/* =========================================================
+   APPLICATION DATA
+========================================================= */
+
 let rooms = [];
+let students = [];
 
 let damages = [
   {
     id: "D-001",
-    room: "B-204",
+    room: "B-02-04",
     item: "Mattress",
     student: "20260045",
+    description: "Mattress damaged",
     cost: 80,
     status: "Pending"
   },
   {
     id: "D-002",
-    room: "A-101",
+    room: "A-01-01",
     item: "Chair",
     student: "20260012",
+    description: "Chair damaged",
     cost: 35,
     status: "Approved"
   },
   {
     id: "D-003",
-    room: "A-102",
+    room: "A-01-02",
     item: "Mirror",
     student: "20260031",
+    description: "Mirror broken",
     cost: 25,
     status: "Paid"
   }
@@ -48,15 +83,17 @@ let damages = [
 let repairs = [
   {
     id: "R-001",
-    room: "A-102",
-    issue: "Ceiling fan not working",
+    room: "A-01-02",
+    item: "Ceiling fan",
+    description: "Ceiling fan not working",
     priority: "Normal",
     status: "Reported"
   },
   {
     id: "R-002",
-    room: "B-204",
-    issue: "Water leak near sink",
+    room: "B-02-04",
+    item: "Sink",
+    description: "Water leak near sink",
     priority: "Urgent",
     status: "In Progress"
   }
@@ -64,225 +101,536 @@ let repairs = [
 
 let inspections = [];
 
-const $ = (s) => document.querySelector(s);
-const view = $("#view");
+let selectedRoomFilter = "All";
 
-const esc = (t) =>
-  String(t).replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  })[c]);
+/* =========================================================
+   HELPER FUNCTIONS
+========================================================= */
 
-const roomStatus = (r) =>
-  r.fix
-    ? "Under Maintenance"
-    : r.occ === 0
-      ? "Available"
-      : r.occ < r.cap
-        ? "Partially Occupied"
-        : "Full";
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => {
+    const entities = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    };
 
-const tone = (s) => ({
-  "Available": "green",
-  "Paid": "green",
-  "Completed": "green",
-  "Approved": "",
-  "Partially Occupied": "amber",
-  "Pending": "amber",
-  "Under Review": "amber",
-  "Reported": "amber",
-  "Assigned": "",
-  "In Progress": "",
-  "Under Maintenance": "red",
-  "Urgent": "red",
-  "Disputed": "red"
-}[s] ?? "");
+    return entities[character];
+  });
+}
 
-const badge = (s) =>
-  `<span class="badge ${tone(s)}">${esc(s)}</span>`;
-
-function toast(msg) {
-  const t = $("#toast");
-
-  if (!t) {
-    console.log(msg);
+function toast(message) {
+  if (!toastElement) {
+    alert(message);
     return;
   }
 
-  t.textContent = msg;
-  t.classList.add("show");
+  toastElement.textContent = message;
+  toastElement.classList.add("show");
 
-  setTimeout(() => t.classList.remove("show"), 2200);
+  clearTimeout(toast.timer);
+
+  toast.timer = setTimeout(() => {
+    toastElement.classList.remove("show");
+  }, 3000);
 }
 
-// Load rooms from the Node.js backend.
+function roomStatus(room) {
+  if (room.fix) return "Maintenance";
+  if (Number(room.occ) >= Number(room.cap)) return "Full";
+  if (Number(room.occ) === 0) return "Available";
+
+  return "Occupied";
+}
+
+function tone(status) {
+  const value = String(status || "").toLowerCase();
+
+  if (
+    value === "paid" ||
+    value === "completed" ||
+    value === "good" ||
+    value === "available"
+  ) {
+    return "good";
+  }
+
+  if (
+    value === "broken" ||
+    value === "urgent" ||
+    value === "maintenance"
+  ) {
+    return "bad";
+  }
+
+  if (
+    value === "pending" ||
+    value === "damaged" ||
+    value === "reported" ||
+    value === "under review"
+  ) {
+    return "warn";
+  }
+
+  return "info";
+}
+
+function badge(status) {
+  return `<span class="badge ${tone(status)}">${esc(status)}</span>`;
+}
+
+function makeRoomLabel(room) {
+  return `${room.no} (${room.occ}/${room.cap})`;
+}
+
+function roomOptions(includeUnavailable = false) {
+  return rooms
+    .filter((room) => {
+      if (includeUnavailable) return true;
+
+      return !room.fix && Number(room.occ) < Number(room.cap);
+    })
+    .map((room) => `
+      <option value="${esc(room.no)}">
+        ${esc(makeRoomLabel(room))}
+      </option>
+    `)
+    .join("");
+}
+
+function itemOptions() {
+  return ITEMS.map((item) =>
+    `<option value="${esc(item)}">${esc(item)}</option>`
+  ).join("");
+}
+
+function conditionOptions() {
+  return CONDITIONS.map((condition) =>
+    `<option value="${esc(condition)}">${esc(condition)}</option>`
+  ).join("");
+}
+
+function getRoom(roomId) {
+  return rooms.find((room) => room.no === roomId);
+}
+
+function getStudent(studentNumber) {
+  return students.find(
+    (student) => student.student_number === studentNumber
+  );
+}
+
+function getRoomStudentCount(roomId) {
+  return students.filter((student) => {
+    const room = getRoom(roomId);
+
+    return room &&
+      student.room_block === room.no.split("-")[0] &&
+      Number(student.room_floor) === Number(room.no.split("-")[1]) &&
+      Number(student.room_number) === Number(room.no.split("-")[2]);
+  }).length;
+}
+
+function nextId(prefix, collection) {
+  const number = collection.length + 1;
+  return `${prefix}-${String(number).padStart(3, "0")}`;
+}
+
+async function apiRequest(url, options = {}) {
+  const response = await fetch(url, options);
+
+  let data;
+
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
+
+  if (!response.ok) {
+    throw new Error(data.error || "The request failed.");
+  }
+
+  return data;
+}
+
+/* =========================================================
+   LOAD ROOMS FROM POSTGRESQL
+========================================================= */
+
 async function loadRoomsFromDatabase() {
   try {
-    const response = await fetch("http://localhost:3000/api/rooms");
+    const data = await apiRequest(`${API_BASE}/rooms`);
 
-    if (!response.ok) {
-      throw new Error(`Server returned status ${response.status}`);
+    const rows = Array.isArray(data) ? data : data.rooms;
+
+    if (!Array.isArray(rows)) {
+      throw new Error("Unexpected room data received from the server.");
     }
 
-    const data = await response.json();
-
-    rooms = data.map((r) => ({
-      no: r.room_id,
-      hostel: `Block ${r.block}`,
-      cap: Number(r.capacity),
-      occ: Number(r.occupied),
-      fix: r.under_maintenance
+    rooms = rows.map((room) => ({
+      no: room.room_id ||
+        `${room.block}-${String(room.floor).padStart(2, "0")}-${String(room.room_number).padStart(2, "0")}`,
+      hostel: `Block ${room.block}`,
+      cap: Number(room.capacity),
+      occ: Number(room.occupied),
+      fix: room.under_maintenance === true
     }));
 
-    console.log("Rooms loaded from PostgreSQL:", rooms);
+    populateStudentRooms();
 
-    // Refresh the currently displayed page using the latest room data.
-    render(view.dataset.name || "dashboard");
-
+    if (view.dataset.name) {
+      render(view.dataset.name);
+    }
   } catch (error) {
     console.error("Could not load rooms:", error);
-    toast("Could not load rooms. Check the backend.");
+    toast("Could not load rooms. Check the backend server.");
   }
 }
 
-const views = {
-  dashboard() {
-    const totalBeds = rooms.reduce((a, r) => a + r.cap, 0);
-    const used = rooms.reduce((a, r) => a + r.occ, 0);
+/* =========================================================
+   LOAD STUDENTS FROM POSTGRESQL
+========================================================= */
 
-    const unpaid = damages
-      .filter((d) => d.status !== "Paid")
-      .reduce((a, d) => a + d.cost, 0);
+async function loadStudents() {
+  try {
+    const data = await apiRequest(`${API_BASE}/students`);
 
-    const open = repairs.filter(
-      (r) => r.status !== "Completed"
-    ).length;
+    students = Array.isArray(data) ? data : data.students;
 
-    const counts = {};
+    if (!Array.isArray(students)) {
+      throw new Error("Unexpected student data received from the server.");
+    }
 
-    damages.forEach((d) => {
-      counts[d.item] = (counts[d.item] || 0) + 1;
+    if (view.dataset.name === "students") {
+      renderStudentsTable();
+    }
+
+    if (view.dataset.name === "dashboard") {
+      render("dashboard");
+    }
+  } catch (error) {
+    console.error("Could not load students:", error);
+    toast("Could not load students. Check /api/students.");
+  }
+}
+
+/* =========================================================
+   STUDENT ROOM SELECTOR
+========================================================= */
+
+function populateStudentRooms() {
+  const select = $("#student-room");
+
+  if (!select) return;
+
+  const previousValue = select.value;
+
+  const availableRooms = rooms.filter((room) => {
+    return !room.fix && Number(room.occ) < Number(room.cap);
+  });
+
+  select.innerHTML =
+    '<option value="">Select an available room</option>' +
+    availableRooms.map((room) => `
+      <option value="${esc(room.no)}">
+        ${esc(room.no)} — ${Number(room.cap) - Number(room.occ)} bed(s) available
+      </option>
+    `).join("");
+
+  if (availableRooms.some((room) => room.no === previousValue)) {
+    select.value = previousValue;
+  }
+}
+
+/* =========================================================
+   STUDENT TABLE
+========================================================= */
+
+function renderStudentsTable() {
+  const tbody = $("#students-table-body");
+
+  if (!tbody) return;
+
+  if (students.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5">No students registered yet.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = students.map((student) => `
+    <tr>
+      <td>${esc(student.student_number)}</td>
+      <td>${esc(student.full_name)}</td>
+      <td>${esc(student.email)}</td>
+      <td>${esc(student.phone || "-")}</td>
+      <td>
+        Block ${esc(student.room_block)},
+        Floor ${esc(student.room_floor)},
+        Room ${esc(student.room_number)}
+      </td>
+    </tr>
+  `).join("");
+}
+
+/* =========================================================
+   REGISTER STUDENT
+========================================================= */
+
+async function registerStudent(event) {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const formData = new FormData(form);
+  const roomId = formData.get("room_id");
+
+  const room = getRoom(roomId);
+
+  if (!room) {
+    toast("Please select an available room.");
+    return;
+  }
+
+  if (room.fix || Number(room.occ) >= Number(room.cap)) {
+    toast("This room is full or under maintenance. Choose another room.");
+    await loadRoomsFromDatabase();
+    return;
+  }
+
+  const parts = roomId.split("-");
+
+  if (parts.length !== 3) {
+    toast("The room ID format is invalid.");
+    return;
+  }
+
+  const submitButton = form.querySelector('button[type="submit"]');
+
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = "Registering...";
+  }
+
+  try {
+    const result = await apiRequest(`${API_BASE}/students`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        student_number: formData.get("student_number"),
+        full_name: formData.get("full_name"),
+        email: formData.get("email"),
+        phone: formData.get("phone"),
+        room_block: parts[0],
+        room_floor: Number(parts[1]),
+        room_number: Number(parts[2])
+      })
     });
 
-    const max = Math.max(1, ...Object.values(counts));
+    toast(result.message || "Student registered successfully.");
+
+    form.reset();
+
+    await loadRoomsFromDatabase();
+    await loadStudents();
+
+    render("students");
+  } catch (error) {
+    console.error("Student registration failed:", error);
+    toast(error.message);
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = "Register student";
+    }
+  }
+}
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+
+const views = {
+  dashboard() {
+    const available = rooms.filter(
+      (room) => !room.fix && Number(room.occ) < Number(room.cap)
+    ).length;
+
+    const full = rooms.filter(
+      (room) => Number(room.occ) >= Number(room.cap)
+    ).length;
+
+    const maintenance = rooms.filter((room) => room.fix).length;
+
+    const pendingFines = damages.filter(
+      (damage) => damage.status === "Pending"
+    ).length;
+
+    const activeRepairs = repairs.filter(
+      (repair) => repair.status !== "Completed"
+    ).length;
+
+    const totalCapacity = rooms.reduce(
+      (sum, room) => sum + Number(room.cap),
+      0
+    );
+
+    const totalOccupied = rooms.reduce(
+      (sum, room) => sum + Number(room.occ),
+      0
+    );
+
+    const recentRepairs = repairs.slice(-5).reverse();
+
+    const damagedItems = {};
+
+    damages.forEach((damage) => {
+      damagedItems[damage.item] = (damagedItems[damage.item] || 0) + 1;
+    });
+
+    const topDamagedItems = Object.entries(damagedItems)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
 
     return `
       <div class="stats">
-        <div class="stat">
-          <b>${used}/${totalBeds}</b>
-          <span>Beds occupied</span>
+        <div class="card">
+          <p>Total rooms</p>
+          <h2>${rooms.length}</h2>
         </div>
 
-        <div class="stat">
-          <b>${damages.length}</b>
-          <span>Damage reports</span>
+        <div class="card">
+          <p>Registered students</p>
+          <h2>${students.length}</h2>
         </div>
 
-        <div class="stat">
-          <b>${open}</b>
-          <span>Open repairs</span>
+        <div class="card">
+          <p>Available rooms</p>
+          <h2>${available}</h2>
         </div>
 
-        <div class="stat warn">
-          <b>RM ${unpaid}</b>
-          <span>Unpaid fines</span>
+        <div class="card">
+          <p>Full rooms</p>
+          <h2>${full}</h2>
+        </div>
+
+        <div class="card">
+          <p>Maintenance rooms</p>
+          <h2>${maintenance}</h2>
+        </div>
+
+        <div class="card">
+          <p>Occupied beds</p>
+          <h2>${totalOccupied} / ${totalCapacity}</h2>
+        </div>
+
+        <div class="card">
+          <p>Pending fines</p>
+          <h2>${pendingFines}</h2>
+        </div>
+
+        <div class="card">
+          <p>Active repairs</p>
+          <h2>${activeRepairs}</h2>
         </div>
       </div>
 
-      <div class="cols">
+      <div class="grid">
         <div class="card">
-          <h3>Most damaged items</h3>
+          <h3>Most reported damaged items</h3>
 
           ${
-            Object.entries(counts).map(([k, v]) => `
-              <div class="bar">
-                <span>${esc(k)}</span>
-                <i style="width:${(v / max) * 100}%"></i>
-                <b>${v}</b>
-              </div>
-            `).join("") ||
-            '<p class="empty">No damage yet.</p>'
+            topDamagedItems.length
+              ? `<ul>
+                  ${topDamagedItems.map(([item, count]) => `
+                    <li>${esc(item)} — ${count} report(s)</li>
+                  `).join("")}
+                </ul>`
+              : "<p>No damage reports yet.</p>"
           }
         </div>
 
         <div class="card">
-          <h3>Latest repair requests</h3>
+          <h3>Recent repairs</h3>
 
-          <table>
-            <tbody>
-              ${
-                repairs.slice(-4).reverse().map((r) => `
-                  <tr>
-                    <td>${esc(r.room)}</td>
-                    <td>${esc(r.issue)}</td>
-                    <td>${badge(r.status)}</td>
-                  </tr>
-                `).join("")
-              }
-            </tbody>
-          </table>
+          ${
+            recentRepairs.length
+              ? `<ul>
+                  ${recentRepairs.map((repair) => `
+                    <li>
+                      ${esc(repair.id)} — ${esc(repair.room)} —
+                      ${esc(repair.item)} ${badge(repair.status)}
+                    </li>
+                  `).join("")}
+                </ul>`
+              : "<p>No repair requests yet.</p>"
+          }
         </div>
       </div>
     `;
   },
 
+  /* =======================================================
+     ROOMS
+  ======================================================= */
+
   rooms() {
-    const f = views._filter || "All";
-
-    const list = rooms.filter(
-      (r) => f === "All" || roomStatus(r) === f
-    );
-
-    const opts = [
-      "All",
-      "Available",
-      "Partially Occupied",
-      "Full",
-      "Under Maintenance"
-    ];
+    const filteredRooms = rooms.filter((room) => {
+      if (selectedRoomFilter === "All") return true;
+      return roomStatus(room) === selectedRoomFilter;
+    });
 
     return `
       <div class="card">
+        <h3>Room management</h3>
+
         <div class="filters">
-          ${
-            opts.map((o) => `
+          ${["All", "Available", "Occupied", "Full", "Maintenance"].map(
+            (filter) => `
               <button
-                class="btn small ${o === f ? "" : "ghost"}"
-                data-filter="${o}"
+                type="button"
+                data-room-filter="${esc(filter)}"
+                class="${selectedRoomFilter === filter ? "active" : ""}"
               >
-                ${o}
+                ${esc(filter)}
               </button>
-            `).join("")
-          }
+            `
+          ).join("")}
         </div>
 
         <div class="scroll">
           <table>
             <thead>
               <tr>
-                <th>Room</th>
-                <th>Hostel</th>
-                <th class="num">Capacity</th>
-                <th class="num">Occupied</th>
+                <th>Room ID</th>
+                <th>Block</th>
+                <th>Capacity</th>
+                <th>Occupied</th>
+                <th>Available beds</th>
                 <th>Status</th>
               </tr>
             </thead>
 
             <tbody>
               ${
-                list.map((r) => `
-                  <tr>
-                    <td><b>${esc(r.no)}</b></td>
-                    <td>${esc(r.hostel)}</td>
-                    <td class="num">${r.cap}</td>
-                    <td class="num">${r.occ}</td>
-                    <td>${badge(roomStatus(r))}</td>
-                  </tr>
-                `).join("") ||
-                '<tr><td colspan="5" class="empty">No rooms match this filter.</td></tr>'
+                filteredRooms.length
+                  ? filteredRooms.map((room) => `
+                      <tr>
+                        <td>${esc(room.no)}</td>
+                        <td>${esc(room.hostel)}</td>
+                        <td>${room.cap}</td>
+                        <td>${room.occ}</td>
+                        <td>${Math.max(0, room.cap - room.occ)}</td>
+                        <td>${badge(roomStatus(room))}</td>
+                      </tr>
+                    `).join("")
+                  : '<tr><td colspan="6">No rooms found.</td></tr>'
               }
             </tbody>
           </table>
@@ -291,416 +639,679 @@ const views = {
     `;
   },
 
+  /* =======================================================
+     STUDENTS
+  ======================================================= */
+
+  students() {
+    return `
+      <div class="card">
+        <h3>Register a student</h3>
+
+        <form id="student-form">
+          <div class="form">
+            <label>
+              Student number *
+              <input
+                id="student-number"
+                name="student_number"
+                required
+                maxlength="30"
+                placeholder="e.g. 20260045"
+              >
+            </label>
+
+            <label>
+              Full name *
+              <input
+                id="student-name"
+                name="full_name"
+                required
+                maxlength="120"
+                placeholder="Enter full name"
+              >
+            </label>
+
+            <label>
+              Email *
+              <input
+                id="student-email"
+                name="email"
+                type="email"
+                required
+                maxlength="150"
+                placeholder="student@example.com"
+              >
+            </label>
+
+            <label>
+              Phone number
+              <input
+                id="student-phone"
+                name="phone"
+                type="tel"
+                maxlength="30"
+                placeholder="Enter phone number"
+              >
+            </label>
+
+            <label>
+              Assign room *
+              <select id="student-room" name="room_id" required>
+                <option value="">Loading available rooms...</option>
+              </select>
+            </label>
+          </div>
+
+          <button class="btn" type="submit">Register student</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Registered students</h3>
+
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Student number</th>
+                <th>Full name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Assigned room</th>
+              </tr>
+            </thead>
+
+            <tbody id="students-table-body">
+              <tr><td colspan="5">Loading students...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  },
+
+  /* =======================================================
+     INSPECTIONS
+  ======================================================= */
+
   inspections() {
     return `
       <div class="card">
-        <h3>New inspection</h3>
+        <h3>Room inspection</h3>
 
-        <div class="form">
-          <label>
-            Room
-            <select id="i-room">
-              ${
-                rooms.map((r) => `
-                  <option value="${esc(r.no)}">${esc(r.no)}</option>
-                `).join("")
-              }
-            </select>
-          </label>
+        <p>
+          Record the condition of hostel property during check-in
+          and check-out.
+        </p>
 
-          <label>
-            Type
-            <select id="i-type">
-              <option>Check-in</option>
-              <option>Check-out</option>
-            </select>
-          </label>
+        <form id="inspection-form">
+          <div class="form">
+            <label>
+              Room *
+              <select name="room" required>
+                <option value="">Select room</option>
+                ${roomOptions(true)}
+              </select>
+            </label>
 
-          <label>
-            Student ID
-            <input id="i-student" placeholder="20260045">
-          </label>
-        </div>
+            <label>
+              Inspection type *
+              <select name="type" required>
+                <option value="Check-in">Check-in</option>
+                <option value="Check-out">Check-out</option>
+              </select>
+            </label>
 
-        <div class="items">
-          ${
-            ITEMS.map((n, i) => `
-              <label>
-                ${esc(n)}
-                <select data-item="${i}">
-                  ${
-                    CONDITIONS.map((c) => `
-                      <option>${esc(c)}</option>
-                    `).join("")
-                  }
-                </select>
-              </label>
-            `).join("")
-          }
-        </div>
+            <label>
+              Student number *
+              <input
+                name="student"
+                required
+                placeholder="Student number"
+              >
+            </label>
+          </div>
 
-        <button class="btn" id="save-insp">Save inspection</button>
-        <div id="compare" style="margin-top:16px"></div>
+          <h3>Property condition</h3>
+
+          <div class="scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Condition</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                ${ITEMS.map((item, index) => `
+                  <tr>
+                    <td>${esc(item)}</td>
+                    <td>
+                      <select name="condition_${index}">
+                        ${conditionOptions()}
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        name="note_${index}"
+                        placeholder="Optional notes"
+                      >
+                    </td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+
+          <button class="btn" type="submit">Save inspection</button>
+        </form>
       </div>
 
       <div class="card">
-        <h3>Saved inspections</h3>
+        <h3>Inspection history</h3>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Room</th>
-              <th>Type</th>
-              <th>Student</th>
-              <th>Date</th>
-              <th>Items not good</th>
-            </tr>
-          </thead>
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Inspection ID</th>
+                <th>Room</th>
+                <th>Type</th>
+                <th>Student</th>
+                <th>Date</th>
+                <th>Items needing attention</th>
+              </tr>
+            </thead>
 
-          <tbody>
-            ${
-              inspections.slice().reverse().map((x) => `
-                <tr>
-                  <td>${esc(x.room)}</td>
-                  <td>${badge(x.type)}</td>
-                  <td>${esc(x.student || "-")}</td>
-                  <td>${esc(x.date)}</td>
-                  <td>
-                    ${
-                      x.bad.length
-                        ? esc(x.bad.map((b) => `${b.item} (${b.cond})`).join(", "))
-                        : "None"
-                    }
-                  </td>
-                </tr>
-              `).join("") ||
-              '<tr><td colspan="5" class="empty">No inspections yet. Save a check-in to start.</td></tr>'
-            }
-          </tbody>
-        </table>
+            <tbody>
+              ${
+                inspections.length
+                  ? inspections.slice().reverse().map((inspection) => {
+                      const issues = inspection.items.filter(
+                        (item) => item.condition !== "Good"
+                      ).length;
+
+                      return `
+                        <tr>
+                          <td>${esc(inspection.id)}</td>
+                          <td>${esc(inspection.room)}</td>
+                          <td>${esc(inspection.type)}</td>
+                          <td>${esc(inspection.student)}</td>
+                          <td>${esc(inspection.date)}</td>
+                          <td>${issues}</td>
+                        </tr>
+                      `;
+                    }).join("")
+                  : '<tr><td colspan="6">No inspections recorded.</td></tr>'
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
   },
+
+  /* =======================================================
+     DAMAGE REPORTS AND FINES
+  ======================================================= */
 
   damage() {
     return `
-      <div class="card scroll">
+      <div class="card">
+        <h3>Report damaged property</h3>
+
+        <form id="damage-form">
+          <div class="form">
+            <label>
+              Room *
+              <select name="room" required>
+                <option value="">Select room</option>
+                ${roomOptions(true)}
+              </select>
+            </label>
+
+            <label>
+              Item *
+              <select name="item" required>
+                ${itemOptions()}
+              </select>
+            </label>
+
+            <label>
+              Student number *
+              <input name="student" required>
+            </label>
+
+            <label>
+              Estimated fine (RM) *
+              <input
+                name="cost"
+                type="number"
+                min="0"
+                step="0.01"
+                required
+              >
+            </label>
+          </div>
+
+          <label>
+            Description *
+            <textarea name="description" required
+              placeholder="Describe the damage"></textarea>
+          </label>
+
+          <button class="btn" type="submit">Create damage report</button>
+        </form>
+      </div>
+
+      <div class="card">
         <h3>Damage reports and fines</h3>
 
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Room</th>
-              <th>Item</th>
-              <th>Student</th>
-              <th class="num">Fine (RM)</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Room</th>
+                <th>Item</th>
+                <th>Student</th>
+                <th>Description</th>
+                <th>Fine (RM)</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
 
-          <tbody>
-            ${
-              damages.map((d, i) => {
-                const next =
-                  FINE_FLOW[FINE_FLOW.indexOf(d.status) + 1];
+            <tbody>
+              ${
+                damages.length
+                  ? damages.slice().reverse().map((damage) => `
+                      <tr>
+                        <td>${esc(damage.id)}</td>
+                        <td>${esc(damage.room)}</td>
+                        <td>${esc(damage.item)}</td>
+                        <td>${esc(damage.student)}</td>
+                        <td>${esc(damage.description)}</td>
+                        <td>${Number(damage.cost).toFixed(2)}</td>
+                        <td>${badge(damage.status)}</td>
+                        <td>
+                          <select data-fine-status="${esc(damage.id)}">
+                            ${FINE_FLOW.map((status) => `
+                              <option
+                                value="${esc(status)}"
+                                ${status === damage.status ? "selected" : ""}
+                              >${esc(status)}</option>
+                            `).join("")}
+                          </select>
 
-                return `
-                  <tr>
-                    <td>${esc(d.id)}</td>
-                    <td>${esc(d.room)}</td>
-                    <td>${esc(d.item)}</td>
-                    <td>${esc(d.student)}</td>
-                    <td class="num">${d.cost}</td>
-                    <td>${badge(d.status)}</td>
-
-                    <td>
-                      ${
-                        next
-                          ? `<button class="btn small" data-fine="${i}">Mark ${next}</button>`
-                          : ""
-                      }
-
-                      ${
-                        d.status !== "Paid" && d.status !== "Disputed"
-                          ? `<button class="btn small ghost" data-dispute="${i}">Dispute</button>`
-                          : ""
-                      }
-                    </td>
-                  </tr>
-                `;
-              }).join("") ||
-              '<tr><td colspan="7" class="empty">No damage reports.</td></tr>'
-            }
-          </tbody>
-        </table>
+                          <button
+                            type="button"
+                            data-dispute="${esc(damage.id)}"
+                          >Dispute</button>
+                        </td>
+                      </tr>
+                    `).join("")
+                  : '<tr><td colspan="8">No damage reports recorded.</td></tr>'
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
   },
+
+  /* =======================================================
+     REPAIRS
+  ======================================================= */
 
   repairs() {
     return `
       <div class="card">
-        <h3>Report a problem</h3>
+        <h3>Create repair request</h3>
 
-        <div class="form">
+        <form id="repair-form">
+          <div class="form">
+            <label>
+              Room *
+              <select name="room" required>
+                <option value="">Select room</option>
+                ${roomOptions(true)}
+              </select>
+            </label>
+
+            <label>
+              Item *
+              <select name="item" required>
+                ${itemOptions()}
+              </select>
+            </label>
+
+            <label>
+              Priority *
+              <select name="priority" required>
+                <option value="Normal">Normal</option>
+                <option value="Urgent">Urgent</option>
+              </select>
+            </label>
+          </div>
+
           <label>
-            Room
-            <select id="r-room">
-              ${
-                rooms.map((r) => `
-                  <option value="${esc(r.no)}">${esc(r.no)}</option>
-                `).join("")
-              }
-            </select>
+            Description *
+            <textarea name="description" required
+              placeholder="Describe the problem"></textarea>
           </label>
 
-          <label>
-            Problem
-            <input id="r-issue" placeholder="e.g. Tube light broken">
-          </label>
-
-          <label>
-            Priority
-            <select id="r-pri">
-              <option>Low</option>
-              <option selected>Normal</option>
-              <option>Urgent</option>
-            </select>
-          </label>
-
-          <button class="btn" id="add-repair">Send request</button>
-        </div>
+          <button class="btn" type="submit">Create repair request</button>
+        </form>
       </div>
 
-      <div class="card scroll">
+      <div class="card">
         <h3>Repair requests</h3>
 
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Room</th>
-              <th>Problem</th>
-              <th>Priority</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Room</th>
+                <th>Item</th>
+                <th>Description</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Update status</th>
+              </tr>
+            </thead>
 
-          <tbody>
-            ${
-              repairs.map((r, i) => {
-                const next =
-                  REPAIR_FLOW[REPAIR_FLOW.indexOf(r.status) + 1];
-
-                return `
-                  <tr>
-                    <td>${esc(r.id)}</td>
-                    <td>${esc(r.room)}</td>
-                    <td>${esc(r.issue)}</td>
-                    <td>${badge(r.priority)}</td>
-                    <td>${badge(r.status)}</td>
-                    <td>
-                      ${
-                        next
-                          ? `<button class="btn small" data-repair="${i}">Mark ${next}</button>`
-                          : ""
-                      }
-                    </td>
-                  </tr>
-                `;
-              }).join("")
-            }
-          </tbody>
-        </table>
+            <tbody>
+              ${
+                repairs.length
+                  ? repairs.slice().reverse().map((repair) => `
+                      <tr>
+                        <td>${esc(repair.id)}</td>
+                        <td>${esc(repair.room)}</td>
+                        <td>${esc(repair.item)}</td>
+                        <td>${esc(repair.description)}</td>
+                        <td>${badge(repair.priority)}</td>
+                        <td>${badge(repair.status)}</td>
+                        <td>
+                          <select data-repair-status="${esc(repair.id)}">
+                            ${REPAIR_FLOW.map((status) => `
+                              <option
+                                value="${esc(status)}"
+                                ${status === repair.status ? "selected" : ""}
+                              >${esc(status)}</option>
+                            `).join("")}
+                          </select>
+                        </td>
+                      </tr>
+                    `).join("")
+                  : '<tr><td colspan="7">No repair requests recorded.</td></tr>'
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
   }
 };
 
-function render(name) {
-  const titles = {
-    dashboard: "Dashboard",
-    rooms: "Rooms",
-    inspections: "Inspections",
-    damage: "Damage and fines",
-    repairs: "Repairs"
-  };
+/* =========================================================
+   RENDER PAGES
+========================================================= */
 
+const pageTitles = {
+  dashboard: "Dashboard",
+  rooms: "Rooms",
+  students: "Student Management",
+  inspections: "Inspections",
+  damage: "Damage and fines",
+  repairs: "Repairs"
+};
+
+function render(name) {
   if (!views[name]) {
     name = "dashboard";
   }
 
-  $("#title").textContent = titles[name];
-
-  document.querySelectorAll("#nav button").forEach((b) => {
-    b.classList.toggle("active", b.dataset.view === name);
-  });
-
+  titleElement.textContent = pageTitles[name] || name;
   view.dataset.name = name;
   view.innerHTML = views[name]();
+
+  nav.querySelectorAll("button[data-view]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.view === name);
+  });
+
+  if (name === "students") {
+    populateStudentRooms();
+    renderStudentsTable();
+
+    const form = $("#student-form");
+
+    if (form) {
+      form.addEventListener("submit", registerStudent);
+    }
+  }
 }
 
-function saveInspection() {
-  const room = $("#i-room").value;
-  const type = $("#i-type").value;
-  const student = $("#i-student").value.trim();
+/* =========================================================
+   SAVE INSPECTION AND DETECT POSSIBLE DAMAGE
+========================================================= */
 
-  const bad = [...document.querySelectorAll("[data-item]")]
-    .map((s) => ({
-      item: ITEMS[Number(s.dataset.item)],
-      cond: s.value
-    }))
-    .filter((x) => x.cond !== "Good");
+function saveInspection(event) {
+  event.preventDefault();
 
-  const rec = {
+  const form = event.currentTarget;
+  const data = new FormData(form);
+
+  const room = data.get("room");
+  const type = data.get("type");
+  const student = String(data.get("student") || "").trim();
+
+  const items = ITEMS.map((item, index) => ({
+    item,
+    condition: data.get(`condition_${index}`),
+    note: String(data.get(`note_${index}`) || "").trim()
+  }));
+
+  const inspection = {
+    id: nextId("I", inspections),
     room,
     type,
     student,
-    bad,
-    date: new Date().toISOString().slice(0, 10)
+    date: new Date().toLocaleString(),
+    items
   };
 
-  const lastIn = inspections
-    .filter((x) => x.room === room && x.type === "Check-in")
-    .pop();
+  inspections.push(inspection);
 
-  inspections.push(rec);
+  if (type === "Check-out") {
+    const previousCheckIn = inspections
+      .slice(0, -1)
+      .reverse()
+      .find((previous) =>
+        previous.room === room &&
+        previous.student === student &&
+        previous.type === "Check-in"
+      );
 
-  toast(type + " saved for " + room);
-  render("inspections");
+    items.forEach((item) => {
+      const previousItem = previousCheckIn?.items.find(
+        (entry) => entry.item === item.item
+      );
 
-  if (type === "Check-out" && lastIn) {
-    const before = new Set(lastIn.bad.map((b) => b.item));
-    const fresh = bad.filter((b) => !before.has(b.item));
+      const newlyDamaged =
+        item.condition !== "Good" &&
+        (!previousItem || previousItem.condition === "Good");
 
-    $("#compare").innerHTML = fresh.length
-      ? `
-        <div class="notice">
-          <b>New damage found:</b>
-          ${esc(fresh.map((f) => `${f.item} (${f.cond})`).join(", "))}.
-          <button class="btn small" id="make-damage">
-            Create damage reports
-          </button>
-        </div>
-      `
-      : `
-        <div class="notice" style="background:var(--green-l);color:var(--green)">
-          No new damage since check-in.
-        </div>
-      `;
-
-    window._fresh = { room, student, fresh };
+      if (newlyDamaged) {
+        damages.push({
+          id: nextId("D", damages),
+          room,
+          item: item.item,
+          student,
+          description: item.note || `Damage detected during check-out: ${item.condition}`,
+          cost: 0,
+          status: "Pending"
+        });
+      }
+    });
   }
+
+  toast(
+    type === "Check-out"
+      ? "Check-out inspection saved. Review any new damage reports."
+      : "Check-in inspection saved."
+  );
+
+  render("inspections");
 }
 
-document.addEventListener("click", (e) => {
-  const t = e.target;
+/* =========================================================
+   CREATE DAMAGE REPORT
+========================================================= */
 
-  const navButton = t.closest("#nav button");
+function createDamageReport(event) {
+  event.preventDefault();
 
-  if (navButton) {
-    render(navButton.dataset.view);
-    return;
-  }
+  const data = new FormData(event.currentTarget);
 
-  if (t.dataset.filter) {
-    views._filter = t.dataset.filter;
+  damages.push({
+    id: nextId("D", damages),
+    room: data.get("room"),
+    item: data.get("item"),
+    student: String(data.get("student") || "").trim(),
+    description: String(data.get("description") || "").trim(),
+    cost: Number(data.get("cost")),
+    status: "Pending"
+  });
+
+  toast("Damage report created.");
+  render("damage");
+}
+
+/* =========================================================
+   CREATE REPAIR REQUEST
+========================================================= */
+
+function createRepair(event) {
+  event.preventDefault();
+
+  const data = new FormData(event.currentTarget);
+
+  repairs.push({
+    id: nextId("R", repairs),
+    room: data.get("room"),
+    item: data.get("item"),
+    description: String(data.get("description") || "").trim(),
+    priority: data.get("priority"),
+    status: "Reported"
+  });
+
+  toast("Repair request created.");
+  render("repairs");
+}
+
+/* =========================================================
+   NAVIGATION AND PAGE EVENTS
+========================================================= */
+
+nav.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-view]");
+
+  if (!button) return;
+
+  render(button.dataset.view);
+});
+
+view.addEventListener("click", (event) => {
+  const filterButton = event.target.closest("[data-room-filter]");
+
+  if (filterButton) {
+    selectedRoomFilter = filterButton.dataset.roomFilter;
     render("rooms");
     return;
   }
 
-  if (t.id === "save-insp") {
-    saveInspection();
-    return;
+  const disputeButton = event.target.closest("[data-dispute]");
+
+  if (disputeButton) {
+    const damage = damages.find(
+      (item) => item.id === disputeButton.dataset.dispute
+    );
+
+    if (damage) {
+      const reason = prompt("Enter the reason for disputing this fine:");
+
+      if (reason && reason.trim()) {
+        damage.status = "Under Review";
+        damage.disputeReason = reason.trim();
+
+        toast("Fine marked for review.");
+        render("damage");
+      }
+    }
   }
+});
 
-  if (t.id === "make-damage") {
-    const data = window._fresh;
+view.addEventListener("change", (event) => {
+  const fineSelect = event.target.closest("[data-fine-status]");
 
-    if (!data) return;
+  if (fineSelect) {
+    const damage = damages.find(
+      (item) => item.id === fineSelect.dataset.fineStatus
+    );
 
-    const { room, student, fresh } = data;
-
-    fresh.forEach((f) => {
-      damages.push({
-        id: "D-" + String(damages.length + 1).padStart(3, "0"),
-        room,
-        item: f.item,
-        student: student || "-",
-        cost: 30,
-        status: "Pending"
-      });
-    });
-
-    toast("Damage reports created");
-    render("damage");
-    return;
-  }
-
-  if (t.dataset.fine !== undefined) {
-    const d = damages[Number(t.dataset.fine)];
-    const next = FINE_FLOW[FINE_FLOW.indexOf(d.status) + 1];
-
-    if (next) {
-      d.status = next;
-      toast("Fine marked " + d.status);
+    if (damage) {
+      damage.status = fineSelect.value;
+      toast("Fine status updated.");
       render("damage");
     }
 
     return;
   }
 
-  if (t.dataset.dispute !== undefined) {
-    damages[Number(t.dataset.dispute)].status = "Disputed";
-    toast("Fine disputed");
-    render("damage");
-    return;
-  }
+  const repairSelect = event.target.closest("[data-repair-status]");
 
-  if (t.dataset.repair !== undefined) {
-    const r = repairs[Number(t.dataset.repair)];
-    const next = REPAIR_FLOW[REPAIR_FLOW.indexOf(r.status) + 1];
+  if (repairSelect) {
+    const repair = repairs.find(
+      (item) => item.id === repairSelect.dataset.repairStatus
+    );
 
-    if (next) {
-      r.status = next;
-      toast("Request marked " + r.status);
+    if (repair) {
+      repair.status = repairSelect.value;
+      toast("Repair status updated.");
       render("repairs");
     }
-
-    return;
-  }
-
-  if (t.id === "add-repair") {
-    const issue = $("#r-issue").value.trim();
-
-    if (!issue) {
-      toast("Describe the problem first");
-      $("#r-issue").focus();
-      return;
-    }
-
-    repairs.push({
-      id: "R-" + String(repairs.length + 1).padStart(3, "0"),
-      room: $("#r-room").value,
-      issue,
-      priority: $("#r-pri").value,
-      status: "Reported"
-    });
-
-    toast("Request sent");
-    render("repairs");
   }
 });
 
-$("#today").textContent = new Date().toLocaleDateString(undefined, {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-  year: "numeric"
+view.addEventListener("submit", (event) => {
+  if (event.target.id === "inspection-form") {
+    saveInspection(event);
+  } else if (event.target.id === "damage-form") {
+    createDamageReport(event);
+  } else if (event.target.id === "repair-form") {
+    createRepair(event);
+  }
 });
+
+/* =========================================================
+   DATE AND INITIAL PAGE
+========================================================= */
+
+if ($("#today")) {
+  $("#today").textContent = new Date().toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  });
+}
 
 render("dashboard");
 loadRoomsFromDatabase();
+loadStudents();
+loadDamages();
+loadRepairs();
