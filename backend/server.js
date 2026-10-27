@@ -13,8 +13,6 @@ const PORT = process.env.PORT || 3000;
 // ==========================================
 
 app.use(express.json());
-
-// Serve frontend files
 app.use(express.static(path.join(__dirname, "../Main")));
 
 app.get("/", (req, res) => {
@@ -34,7 +32,7 @@ app.get("/api/health", async (req, res) => {
       message: "Server and database connected!"
     });
   } catch (error) {
-    console.error("Database error:", error.message);
+    console.error("Database health check error:", error);
 
     res.status(500).json({
       success: false,
@@ -63,22 +61,24 @@ app.get("/api/rooms", async (req, res) => {
 
     const rooms = result.rows.map((room) => ({
       ...room,
-      room_id: `${room.block}-${String(room.floor).padStart(2, "0")}-${String(room.room_number).padStart(2, "0")}`
+      room_id:
+        `${String(room.block).trim()}-` +
+        `${String(room.floor).padStart(2, "0")}-` +
+        `${String(room.room_number).padStart(2, "0")}`
     }));
 
     res.json(rooms);
   } catch (error) {
-    console.error("Rooms error:", error.message);
+    console.error("Load rooms error:", error);
 
     res.status(500).json({
-      success: false,
       error: "Could not retrieve rooms."
     });
   }
 });
 
 // ==========================================
-// 4. GET REGISTERED STUDENTS
+// 4. GET STUDENTS
 // ==========================================
 
 app.get("/api/students", async (req, res) => {
@@ -100,7 +100,7 @@ app.get("/api/students", async (req, res) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error("Load students error:", error.message);
+    console.error("Load students error:", error);
 
     res.status(500).json({
       error: "Could not load students."
@@ -109,7 +109,7 @@ app.get("/api/students", async (req, res) => {
 });
 
 // ==========================================
-// 5. REGISTER STUDENT AND ASSIGN ROOM
+// 5. REGISTER STUDENT
 // ==========================================
 
 app.post("/api/students", async (req, res) => {
@@ -124,9 +124,12 @@ app.post("/api/students", async (req, res) => {
   } = req.body;
 
   if (
-    !student_number?.trim() ||
-    !full_name?.trim() ||
-    !email?.trim() ||
+    typeof student_number !== "string" ||
+    !student_number.trim() ||
+    typeof full_name !== "string" ||
+    !full_name.trim() ||
+    typeof email !== "string" ||
+    !email.trim() ||
     !room_block ||
     room_floor == null ||
     room_number == null
@@ -144,7 +147,9 @@ app.post("/api/students", async (req, res) => {
     const roomResult = await client.query(
       `SELECT capacity, occupied, under_maintenance
        FROM public.rooms
-       WHERE block = $1 AND floor = $2 AND room_number = $3
+       WHERE block = $1
+         AND floor = $2
+         AND room_number = $3
        FOR UPDATE`,
       [room_block, Number(room_floor), Number(room_number)]
     );
@@ -159,7 +164,7 @@ app.post("/api/students", async (req, res) => {
 
     const room = roomResult.rows[0];
 
-    if (room.under_maintenance === true) {
+    if (room.under_maintenance) {
       await client.query("ROLLBACK");
 
       return res.status(400).json({
@@ -205,11 +210,7 @@ app.post("/api/students", async (req, res) => {
        WHERE block = $1
          AND floor = $2
          AND room_number = $3`,
-      [
-        room_block,
-        Number(room_floor),
-        Number(room_number)
-      ]
+      [room_block, Number(room_floor), Number(room_number)]
     );
 
     await client.query("COMMIT");
@@ -221,7 +222,7 @@ app.post("/api/students", async (req, res) => {
   } catch (error) {
     await client.query("ROLLBACK");
 
-    console.error("Register student error:", error.message);
+    console.error("Register student error:", error);
 
     if (error.code === "23505") {
       return res.status(409).json({
@@ -251,7 +252,7 @@ app.get("/api/inspections", async (req, res) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error("Load inspections error:", error.message);
+    console.error("Load inspections error:", error);
 
     res.status(500).json({
       error: "Could not load inspections."
@@ -277,7 +278,8 @@ app.post("/api/inspections", async (req, res) => {
     !room_block ||
     room_floor == null ||
     room_number == null ||
-    !student_number?.trim() ||
+    typeof student_number !== "string" ||
+    !student_number.trim() ||
     !["Check-in", "Check-out"].includes(inspection_type) ||
     !Array.isArray(inspection_items)
   ) {
@@ -290,32 +292,21 @@ app.post("/api/inspections", async (req, res) => {
     const studentResult = await pool.query(
       `SELECT student_id
        FROM public.students
-       WHERE student_number = $1`,
-      [student_number.trim()]
-    );
-
-    if (studentResult.rows.length === 0) {
-      return res.status(400).json({
-        error: "Student number is not registered."
-      });
-    }
-
-    const roomResult = await pool.query(
-      `SELECT 1
-       FROM public.rooms
-       WHERE block = $1
-         AND floor = $2
-         AND room_number = $3`,
+       WHERE student_number = $1
+         AND room_block = $2
+         AND room_floor = $3
+         AND room_number = $4`,
       [
+        student_number.trim(),
         room_block,
         Number(room_floor),
         Number(room_number)
       ]
     );
 
-    if (roomResult.rows.length === 0) {
+    if (studentResult.rows.length === 0) {
       return res.status(400).json({
-        error: "The selected room does not exist."
+        error: "The student is not assigned to the selected room."
       });
     }
 
@@ -346,7 +337,7 @@ app.post("/api/inspections", async (req, res) => {
       inspection: result.rows[0]
     });
   } catch (error) {
-    console.error("Save inspection error:", error.message);
+    console.error("Save inspection error:", error);
 
     res.status(500).json({
       error: "Could not save inspection."
@@ -355,7 +346,7 @@ app.post("/api/inspections", async (req, res) => {
 });
 
 // ==========================================
-// 8. GET DAMAGE REPORTS AND FINES
+// 8. GET DAMAGE REPORTS
 // ==========================================
 
 app.get("/api/damages", async (req, res) => {
@@ -368,7 +359,7 @@ app.get("/api/damages", async (req, res) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error("Load damage reports error:", error.message);
+    console.error("Load damage reports error:", error);
 
     res.status(500).json({
       error: "Could not load damage reports."
@@ -382,7 +373,6 @@ app.get("/api/damages", async (req, res) => {
 
 app.post("/api/damages", async (req, res) => {
   const {
-    report_number,
     room_block,
     room_floor,
     room_number,
@@ -394,14 +384,18 @@ app.post("/api/damages", async (req, res) => {
 
   const amount = Number(fine_amount);
 
+  console.log("Received damage report:", req.body);
+
   if (
-    !report_number?.trim() ||
     !room_block ||
     room_floor == null ||
     room_number == null ||
-    !item_name?.trim() ||
-    !student_number?.trim() ||
-    !description?.trim() ||
+    typeof item_name !== "string" ||
+    !item_name.trim() ||
+    typeof student_number !== "string" ||
+    !student_number.trim() ||
+    typeof description !== "string" ||
+    !description.trim() ||
     fine_amount == null ||
     !Number.isFinite(amount) ||
     amount < 0
@@ -433,6 +427,12 @@ app.post("/api/damages", async (req, res) => {
       });
     }
 
+    // Keep the generated ID below the VARCHAR(20) limit.
+    const reportNumber =
+      "DMG-" +
+      Date.now().toString(36).toUpperCase() +
+      Math.floor(Math.random() * 10).toString();
+
     const result = await pool.query(
       `INSERT INTO public.damage_reports
        (
@@ -448,7 +448,7 @@ app.post("/api/damages", async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
       [
-        report_number.trim(),
+        reportNumber,
         room_block,
         Number(room_floor),
         Number(room_number),
@@ -464,11 +464,11 @@ app.post("/api/damages", async (req, res) => {
       damage: result.rows[0]
     });
   } catch (error) {
-    console.error("Create damage report error:", error.message);
+    console.error("Create damage report error:", error);
 
     if (error.code === "23505") {
       return res.status(409).json({
-        error: "This report number already exists."
+        error: "Duplicate report number. Please try again."
       });
     }
 
@@ -482,8 +482,11 @@ app.post("/api/damages", async (req, res) => {
 // 10. UPDATE FINE STATUS
 // ==========================================
 
+
 app.patch("/api/damages/:id/status", async (req, res) => {
-  const { status, dispute_reason } = req.body;
+  const status = String(req.body?.status ?? "").trim();
+  const disputeReason = req.body?.dispute_reason;
+  const damageId = Number(req.params.id);
 
   const allowedStatuses = [
     "Pending",
@@ -492,9 +495,23 @@ app.patch("/api/damages/:id/status", async (req, res) => {
     "Paid"
   ];
 
+  console.log("Fine status update received:", {
+    id: damageId,
+    body: req.body,
+    status: status
+  });
+
+  if (!Number.isInteger(damageId) || damageId <= 0) {
+    return res.status(400).json({
+      error: "Invalid damage report ID."
+    });
+  }
+
   if (!allowedStatuses.includes(status)) {
     return res.status(400).json({
-      error: "Invalid fine status."
+      error: `Invalid fine status: "${status}".`,
+      received: req.body?.status ?? null,
+      allowedStatuses
     });
   }
 
@@ -502,13 +519,16 @@ app.patch("/api/damages/:id/status", async (req, res) => {
     const result = await pool.query(
       `UPDATE public.damage_reports
        SET fine_status = $1,
-           dispute_reason = COALESCE($2, dispute_reason)
+           dispute_reason = CASE
+             WHEN $2::text IS NULL THEN dispute_reason
+             ELSE $2
+           END
        WHERE damage_id = $3
        RETURNING *`,
       [
         status,
-        dispute_reason ?? null,
-        req.params.id
+        disputeReason == null ? null : String(disputeReason),
+        damageId
       ]
     );
 
@@ -518,14 +538,14 @@ app.patch("/api/damages/:id/status", async (req, res) => {
       });
     }
 
-    res.json({
+    return res.json({
       message: "Fine status updated successfully.",
       damage: result.rows[0]
     });
   } catch (error) {
-    console.error("Update fine status error:", error.message);
+    console.error("Update fine status error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       error: "Could not update fine status."
     });
   }
@@ -545,7 +565,7 @@ app.get("/api/repairs", async (req, res) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error("Load repairs error:", error.message);
+    console.error("Load repairs error:", error);
 
     res.status(500).json({
       error: "Could not load repair requests."
@@ -559,7 +579,6 @@ app.get("/api/repairs", async (req, res) => {
 
 app.post("/api/repairs", async (req, res) => {
   const {
-    request_number,
     room_block,
     room_floor,
     room_number,
@@ -569,12 +588,13 @@ app.post("/api/repairs", async (req, res) => {
   } = req.body;
 
   if (
-    !request_number?.trim() ||
     !room_block ||
     room_floor == null ||
     room_number == null ||
-    !item_name?.trim() ||
-    !description?.trim() ||
+    typeof item_name !== "string" ||
+    !item_name.trim() ||
+    typeof description !== "string" ||
+    !description.trim() ||
     !["Normal", "Urgent"].includes(priority)
   ) {
     return res.status(400).json({
@@ -589,11 +609,7 @@ app.post("/api/repairs", async (req, res) => {
        WHERE block = $1
          AND floor = $2
          AND room_number = $3`,
-      [
-        room_block,
-        Number(room_floor),
-        Number(room_number)
-      ]
+      [room_block, Number(room_floor), Number(room_number)]
     );
 
     if (roomResult.rows.length === 0) {
@@ -601,6 +617,12 @@ app.post("/api/repairs", async (req, res) => {
         error: "The selected room does not exist."
       });
     }
+
+    // Generate a short request number on the server.
+    const requestNumber =
+      "REP-" +
+      Date.now().toString(36).toUpperCase() +
+      Math.floor(Math.random() * 10).toString();
 
     const result = await pool.query(
       `INSERT INTO public.repair_requests
@@ -616,7 +638,7 @@ app.post("/api/repairs", async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
       [
-        request_number.trim(),
+        requestNumber,
         room_block,
         Number(room_floor),
         Number(room_number),
@@ -631,11 +653,11 @@ app.post("/api/repairs", async (req, res) => {
       repair: result.rows[0]
     });
   } catch (error) {
-    console.error("Create repair error:", error.message);
+    console.error("Create repair error:", error);
 
     if (error.code === "23505") {
       return res.status(409).json({
-        error: "This repair request number already exists."
+        error: "Duplicate repair request number. Please try again."
       });
     }
 
@@ -649,8 +671,11 @@ app.post("/api/repairs", async (req, res) => {
 // 13. UPDATE REPAIR STATUS
 // ==========================================
 
+
 app.patch("/api/repairs/:id/status", async (req, res) => {
   const { status } = req.body;
+
+  const repairId = Number(req.params.id);
 
   const allowedStatuses = [
     "Reported",
@@ -659,48 +684,86 @@ app.patch("/api/repairs/:id/status", async (req, res) => {
     "Completed"
   ];
 
+  if (!Number.isInteger(repairId) || repairId <= 0) {
+    return res.status(400).json({
+      error: "Invalid repair request ID."
+    });
+  }
+
   if (!allowedStatuses.includes(status)) {
     return res.status(400).json({
       error: "Invalid repair status."
     });
   }
 
+  const client = await pool.connect();
+
   try {
-    const result = await pool.query(
-      `UPDATE public.repair_requests
-       SET repair_status = $1
-       WHERE repair_id = $2
-       RETURNING *`,
-      [status, req.params.id]
+    await client.query("BEGIN");
+
+    // Find the repair and lock its database row.
+    const existing = await client.query(
+      `SELECT repair_id, repair_status
+       FROM public.repair_requests
+       WHERE repair_id = $1
+       FOR UPDATE`,
+      [repairId]
     );
 
-    if (result.rows.length === 0) {
+    if (existing.rows.length === 0) {
+      await client.query("ROLLBACK");
+
       return res.status(404).json({
         error: "Repair request not found."
       });
     }
 
-    res.json({
+    // Prevent changes after completion.
+    if (existing.rows[0].repair_status === "Completed") {
+      await client.query("ROLLBACK");
+
+      return res.status(409).json({
+        error: "This repair is already Completed and cannot be changed."
+      });
+    }
+
+    const result = await client.query(
+      `UPDATE public.repair_requests
+       SET repair_status = $1
+       WHERE repair_id = $2
+       RETURNING *`,
+      [status, repairId]
+    );
+
+    await client.query("COMMIT");
+
+    return res.json({
       message: "Repair status updated successfully.",
       repair: result.rows[0]
     });
-  } catch (error) {
-    console.error("Update repair status error:", error.message);
 
-    res.status(500).json({
+  } catch (error) {
+    await client.query("ROLLBACK");
+
+    console.error("Update repair status error:", error);
+
+    return res.status(500).json({
       error: "Could not update repair status."
     });
+
+  } finally {
+    client.release();
   }
 });
 
+
 // ==========================================
-// 14. HANDLE UNKNOWN API ROUTES
-// Keep this section after all API routes
+// 14. UNKNOWN API ROUTES
+// Keep this AFTER all API routes.
 // ==========================================
 
 app.use("/api", (req, res) => {
   res.status(404).json({
-    success: false,
     error: "API endpoint not found."
   });
 });
