@@ -1,0 +1,84 @@
+/* =========================================================
+   css/theme.css  —  colour tokens for light and dark mode
+   The theme is set on <html data-theme="light|dark"> by js/theme.js
+========================================================= */
+
+:root,
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #f4f6f5;
+  --bg-glow: rgba(14, 111, 105, .07);
+  --surface: #ffffff;
+  --surface-2: #f6f9f8;          /* table headers, row hover */
+  --line: #d9e1df;
+  --line-strong: #b9c8c6;
+  --text: #17292e;
+  --muted: #62767a;
+
+  --brand: #0e6f69;
+  --brand-d: #0b5c57;
+  --brand-l: #e3f1ef;
+  --brand-2: #2aa198;            /* end of bar gradient */
+  --on-brand: #ffffff;
+  --focus: #6bb8b1;
+
+  --amber: #b7791f;  --amber-l: #fbf0d9;  --notice-text: #7a4f0f;
+  --red: #b42318;    --red-l: #fde8e6;
+  --green: #1f7a3d;  --green-l: #e2f4e8;
+
+  --side-1: #1f3a41;
+  --side-2: #17292e;
+  --side-text: #b9c8ca;
+  --side-hover: rgba(255, 255, 255, .08);
+
+  --toast-bg: #17292e;
+  --toast-text: #ffffff;
+
+  --shadow-sm: 0 1px 2px rgba(23, 41, 46, .06), 0 1px 3px rgba(23, 41, 46, .05);
+  --shadow-md: 0 6px 18px rgba(23, 41, 46, .12);
+  --shadow-up: 0 -4px 16px rgba(23, 41, 46, .10);
+
+  --r: 10px;
+  --r-lg: 14px;
+  --side-w: 240px;
+  --gap: clamp(12px, 2vw, 20px);
+  --pad: clamp(16px, 3.2vw, 40px);
+  --nav-h: 64px;                 /* height of the phone bottom bar */
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #0e1a1d;
+  --bg-glow: rgba(47, 184, 173, .08);
+  --surface: #15262a;
+  --surface-2: #1a2f34;
+  --line: #26414a;
+  --line-strong: #35565f;
+  --text: #e5eeee;
+  --muted: #93a9ad;
+
+  --brand: #2fb8ad;
+  --brand-d: #25a096;
+  --brand-l: rgba(47, 184, 173, .16);
+  --brand-2: #4fd1c5;
+  --on-brand: #06201e;
+  --focus: #4fd1c5;
+
+  --amber: #f0b54a;  --amber-l: rgba(240, 181, 74, .16);  --notice-text: #f3d089;
+  --red: #ff8a80;    --red-l: rgba(255, 138, 128, .16);
+  --green: #5fd28a;  --green-l: rgba(95, 210, 138, .16);
+
+  --side-1: #0d191c;
+  --side-2: #0a1315;
+  --side-text: #8fa5a9;
+  --side-hover: rgba(255, 255, 255, .06);
+
+  --toast-bg: #e5eeee;
+  --toast-text: #0e1a1d;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .35);
+  --shadow-md: 0 8px 22px rgba(0, 0, 0, .45);
+  --shadow-up: 0 -4px 16px rgba(0, 0, 0, .35);
+}
