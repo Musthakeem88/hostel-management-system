@@ -114,6 +114,47 @@ async function apiRequest(url, options = {}) {
   return data;
 }
 
+/* ---------- Dates (kept as plain YYYY-MM-DD text, no time zones) ---------- */
+
+function todayISO() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function formatDate(iso) {
+  if (!iso) return "—";
+
+  const [year, month, day] = String(iso).split("-").map(Number);
+
+  if (!year || !month || !day) return esc(iso);
+
+  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
+}
+
+function isOverdue(job) {
+  return job.status !== "Completed" && Boolean(job.expected) && job.expected < todayISO();
+}
+
+function maintenanceTypeOptions(selected = "") {
+  return MAINTENANCE_TYPES.map((type) =>
+    `<option value="${esc(type)}"${type === selected ? " selected" : ""}>${esc(type)}</option>`
+  ).join("");
+}
+
+function staffDatalist() {
+  const names = Array.from(
+    new Set(maintenance.map((job) => job.staff).filter(Boolean))
+  ).sort();
+
+  return `<datalist id="staff-list">${names
+    .map((name) => `<option value="${esc(name)}"></option>`)
+    .join("")}</datalist>`;
+}
+
 /* Copies each column heading onto its cells (data-label) so tables can
    turn into stacked cards on phones without changing any markup. */
 function labelTables(root = document) {

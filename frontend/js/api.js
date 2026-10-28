@@ -145,3 +145,33 @@ async function loadRepairs() {
     toast("Could not load repair requests.");
   }
 }
+
+async function loadMaintenance() {
+  try {
+    const data = await apiRequest(`${API_BASE}/maintenance`);
+    const rows = Array.isArray(data) ? data : data.maintenance;
+
+    if (!Array.isArray(rows)) {
+      throw new Error("Unexpected maintenance data received.");
+    }
+
+    maintenance = rows.map((row) => ({
+      dbId: row.maintenance_id,
+      room: formatRoom(row.room_block, row.room_floor, row.room_number),
+      type: row.maintenance_type,
+      description: row.description,
+      staff: row.assigned_staff || "",
+      status: row.status || "Pending",
+      reported: row.reported_date,
+      expected: row.expected_completion_date || "",
+      completed: row.completed_date || ""
+    }));
+
+    if (["maintenance", "dashboard"].includes(view.dataset.name)) {
+      render(view.dataset.name);
+    }
+  } catch (error) {
+    console.error(error);
+    toast("Could not load maintenance requests.");
+  }
+}

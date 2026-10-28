@@ -6,7 +6,7 @@ views.dashboard = function () {
   ).length;
 
   const full = rooms.filter((room) => room.occ >= room.cap).length;
-  const maintenance = rooms.filter((room) => room.fix).length;
+  const maintenanceRooms = rooms.filter((room) => room.fix).length;
 
   const pendingFines = damages.filter(
     (damage) => damage.status === "Pending"
@@ -15,6 +15,25 @@ views.dashboard = function () {
   const activeRepairs = repairs.filter(
     (repair) => repair.status !== "Completed"
   ).length;
+
+  const mCount = (status) => maintenance.filter((job) => job.status === status).length;
+  const mOverdue = maintenance.filter(isOverdue).length;
+
+  // Open jobs, soonest deadline first (jobs without a date go last)
+  const openJobs = maintenance
+    .filter((job) => job.status !== "Completed")
+    .sort((a, b) => (a.expected || "9999-99-99").localeCompare(b.expected || "9999-99-99"));
+
+  const openJobRows = openJobs.slice(0, 5).map((job) => `
+    <tr>
+      <td>${esc(job.room)}</td>
+      <td>${esc(job.type)}</td>
+      <td class="wrap">${esc(job.description)}</td>
+      <td>${job.staff ? esc(job.staff) : '<span class="muted">Unassigned</span>'}</td>
+      <td>${badge(job.status)}</td>
+      <td><span class="nowrap">${formatDate(job.expected)}</span> ${isOverdue(job) ? '<span class="badge bad">Overdue</span>' : ""}</td>
+    </tr>
+  `).join("");
 
   const capacity = rooms.reduce((sum, room) => sum + room.cap, 0);
   const occupied = rooms.reduce((sum, room) => sum + room.occ, 0);
@@ -55,10 +74,33 @@ views.dashboard = function () {
       ${stat("Registered students", students.length)}
       ${stat("Available rooms", available)}
       ${stat("Full rooms", full)}
-      ${stat("Maintenance rooms", maintenance, maintenance > 0)}
       ${stat("Occupied beds", `${occupied} / ${capacity}`)}
       ${stat("Pending fines", pendingFines, pendingFines > 0)}
       ${stat("Active repairs", activeRepairs)}
+    </div>
+
+    <h3 class="section-title">Maintenance</h3>
+    <div class="stats">
+      ${stat("Pending", mCount("Pending"), mCount("Pending") > 0)}
+      ${stat("In progress", mCount("In Progress"))}
+      ${stat("Completed", mCount("Completed"))}
+      ${stat("Overdue", mOverdue, mOverdue > 0)}
+    </div>
+
+    <div class="card">
+      <h3>Open maintenance jobs</h3>
+      ${openJobRows ? `
+        <div class="scroll">
+          <table>
+            <thead><tr>
+              <th>Room</th><th>Type</th><th>Problem</th><th>Staff</th><th>Status</th><th>Expected</th>
+            </tr></thead>
+            <tbody>${openJobRows}</tbody>
+          </table>
+        </div>
+        ${openJobs.length > 5 ? `<p class="muted">Showing 5 of ${openJobs.length} open jobs.</p>` : ""}
+      ` : '<p class="empty">No open maintenance jobs.</p>'}
+      <button type="button" class="btn ghost small" data-goto="maintenance">Open maintenance page</button>
     </div>
 
     <div class="cols">

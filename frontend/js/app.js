@@ -10,7 +10,8 @@ const pageTitles = {
   students: "Student Management",
   inspections: "Inspections",
   damage: "Damage and fines",
-  repairs: "Repairs"
+  repairs: "Repairs",
+  maintenance: "Maintenance"
 };
 
 function render(name) {
@@ -33,11 +34,7 @@ function render(name) {
 
 /* ---------- Navigation events ---------- */
 
-nav.addEventListener("click", async (event) => {
-  const button = event.target.closest("button[data-view]");
-  if (!button) return;
-
-  const page = button.dataset.view;
+async function navigate(page) {
   render(page);
   window.scrollTo({ top: 0 });
 
@@ -45,11 +42,28 @@ nav.addEventListener("click", async (event) => {
   if (page === "inspections") await loadInspections();
   if (page === "damage") await loadDamages();
   if (page === "repairs") await loadRepairs();
+  if (page === "maintenance") await loadMaintenance();
+}
+
+nav.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-view]");
+  if (!button) return;
+
+  navigate(button.dataset.view);
 });
 
 /* ---------- Click events ---------- */
 
 view.addEventListener("click", (event) => {
+  const maintenanceButton = event.target.closest(
+    "[data-maint-filter], [data-maint-view], [data-maint-edit], [data-maint-complete], [data-goto]"
+  );
+
+  if (maintenanceButton) {
+    handleMaintenanceClick(maintenanceButton);
+    return;
+  }
+
   const filterButton = event.target.closest("[data-room-filter]");
 
   if (filterButton) {
@@ -160,7 +174,8 @@ view.addEventListener("submit", (event) => {
     "student-form",
     "inspection-form",
     "damage-form",
-    "repair-form"
+    "repair-form",
+    "maintenance-form"
   ].includes(form.id)) {
     event.preventDefault();
   }
@@ -173,6 +188,29 @@ view.addEventListener("submit", (event) => {
     createDamageReport(event);
   } else if (form.id === "repair-form") {
     createRepair(event);
+  } else if (form.id === "maintenance-form") {
+    createMaintenance(event);
+  }
+});
+
+/* ---------- Maintenance dialog (View / Edit) ---------- */
+
+modal.addEventListener("click", (event) => {
+  if (event.target === modal) {            // click on the dark backdrop
+    closeModal();
+    return;
+  }
+
+  const button = event.target.closest(
+    "[data-maint-edit], [data-maint-complete], [data-modal-close]"
+  );
+
+  if (button) handleMaintenanceClick(button);
+});
+
+modal.addEventListener("submit", (event) => {
+  if (event.target.id === "maintenance-edit-form") {
+    saveMaintenanceEdit(event);
   }
 });
 
@@ -193,3 +231,4 @@ loadStudents();
 loadInspections();
 loadDamages();
 loadRepairs();
+loadMaintenance();

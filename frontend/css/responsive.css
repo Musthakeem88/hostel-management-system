@@ -66,6 +66,14 @@
     bottom: calc(var(--nav-h) + 14px + env(safe-area-inset-bottom));
   }
 
+  /* dialog becomes a bottom sheet */
+  dialog.modal {
+    width: 100%; max-width: 100%; margin: auto 0 0;
+    border-radius: var(--r-lg) var(--r-lg) 0 0; border-bottom: 0;
+    max-height: 92dvh;
+  }
+  .modal-body { padding-bottom: calc(20px + env(safe-area-inset-bottom)); max-height: 92dvh; }
+
   /* 16px stops iOS from zooming into fields */
   input, select, textarea { font-size: 16px; }
 }
@@ -91,7 +99,7 @@
   }
   .rtable tbody tr:hover { background: var(--surface); }
   .rtable td {
-    display: flex; justify-content: space-between; align-items: center; gap: 14px;
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 14px;
     padding: 9px 0; text-align: right; border-bottom: 1px dashed var(--line);
   }
   .rtable td:last-child { border-bottom: 0; }
@@ -100,18 +108,26 @@
     color: var(--muted); font-weight: 600; font-size: .82rem;
   }
   .rtable td:not([data-label])::before { content: none; }
-  .rtable td, .rtable td.wrap { white-space: normal; min-width: 0; }
+  .rtable td, .rtable td.wrap { white-space: normal !important; min-width: 0; }
   .rtable td.empty-row { display: block; text-align: center; padding: 18px 0; }
   .rtable td select, .rtable td input { flex: 1 1 auto; width: auto; min-width: 0; }
   .rtable td .actions { justify-content: flex-end; flex: 1 1 auto; }
   .rtable td .actions select { flex: 1 1 120px; }
 }
 
+/* ---------- Narrow dialogs ---------- */
+@media (max-width: 480px) {
+  dl.details { grid-template-columns: 1fr; gap: 2px; }
+  dl.details dd { margin-bottom: 10px; }
+  .modal-actions .btn { flex: 1 1 auto; }
+}
+
 /* ---------- Small phones ---------- */
 @media (max-width: 360px) {
   .stats { grid-template-columns: minmax(0, 1fr); }
   .brand { font-size: 1rem; }
-  #nav button { font-size: .62rem; }
+  #nav button { font-size: .58rem; padding-left: 0; padding-right: 0; }
+  #nav button span { overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 }
 
 /* ---------- Touch devices: bigger tap targets, no sticky hover ---------- */

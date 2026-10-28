@@ -21,6 +21,7 @@ app.use("/api/students", require("./routes/students"));
 app.use("/api/inspections", require("./routes/inspections"));
 app.use("/api/damages", require("./routes/damages"));
 app.use("/api/repairs", require("./routes/repairs"));
+app.use("/api/maintenance", require("./routes/maintenance"));
 
 // Unknown API routes (keep AFTER all API routes)
 app.use("/api", (req, res) => {
