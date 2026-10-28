@@ -1,5 +1,3 @@
-/* js/views/maintenance.js  —  maintenance requests (add, view, edit, complete) */
-
 views.maintenance = function () {
   const counts = { All: maintenance.length };
   MAINTENANCE_STATUS.forEach((status) => {

@@ -1,5 +1,3 @@
-/* js/views/repairs.js  —  repair requests (completed requests are locked) */
-
 views.repairs = function () {
   return `
     <div class="card">

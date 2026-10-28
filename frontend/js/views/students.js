@@ -1,5 +1,3 @@
-/* js/views/students.js */
-
 views.students = function () {
   return `
     <div class="card">

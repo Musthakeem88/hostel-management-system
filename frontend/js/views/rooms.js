@@ -1,5 +1,3 @@
-/* js/views/rooms.js */
-
 views.rooms = function () {
   const filtered = rooms.filter(
     (room) => selectedRoomFilter === "All" ||

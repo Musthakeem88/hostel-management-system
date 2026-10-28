@@ -1,5 +1,3 @@
-/* js/views/inspections.js */
-
 views.inspections = function () {
   return `
     <div class="card">

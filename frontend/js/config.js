@@ -1,8 +1,3 @@
-/* =========================================================
-   HOSTEL MANAGEMENT SYSTEM
-   js/config.js  —  constants, DOM references and shared state
-========================================================= */
-
 const API_BASE = "/api";
 
 const $ = (selector) => document.querySelector(selector);

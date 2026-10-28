@@ -1,5 +1,3 @@
-/* js/views/damage.js  —  damage reports and fines */
-
 views.damage = function () {
   return `
     <div class="card">

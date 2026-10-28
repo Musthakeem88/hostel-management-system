@@ -1,8 +1,3 @@
-/* =========================================================
-   css/responsive.css  —  tablet, phone, touch, print, motion
-   Same features everywhere; only the layout adapts.
-========================================================= */
-
 /* ---------- Large screens ---------- */
 @media (min-width: 1500px) {
   :root { --side-w: 260px; }

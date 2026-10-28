@@ -1,9 +1,3 @@
-/* =========================================================
-   js/app.js  —  rendering, navigation, events and start-up
-========================================================= */
-
-/* ---------- Render & navigation ---------- */
-
 const pageTitles = {
   dashboard: "Dashboard",
   rooms: "Rooms",

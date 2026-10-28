@@ -1,7 +1,3 @@
-/* =========================================================
-   js/api.js  —  load data from the backend
-========================================================= */
-
 async function loadRoomsFromDatabase() {
   try {
     const data = await apiRequest(`${API_BASE}/rooms`);

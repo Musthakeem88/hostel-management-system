@@ -1,7 +1,3 @@
-/* =========================================================
-   js/actions.js  —  create / update data through the API
-========================================================= */
-
 /* ---------- Register student ---------- */
 
 async function registerStudent(event) {

@@ -1,5 +1,3 @@
-/* js/views/dashboard.js */
-
 views.dashboard = function () {
   const available = rooms.filter(
     (room) => !room.fix && room.occ < room.cap

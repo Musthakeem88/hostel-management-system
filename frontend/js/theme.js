@@ -1,8 +1,3 @@
-/* =========================================================
-   js/theme.js  —  light / dark mode
-   Loaded in <head> so the theme is applied before the page paints.
-   Order of preference: saved choice -> system setting.
-========================================================= */
 (function () {
   var KEY = "hostel-theme";
   var root = document.documentElement;
