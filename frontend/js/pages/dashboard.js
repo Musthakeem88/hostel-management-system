@@ -87,21 +87,17 @@ function staffDashboard() {
       ${statCard("Registered students", s.students, { page: can("students") ? "students" : null })}
       ${statCard("Available rooms", r.available)}
       ${statCard("Full rooms", r.full)}
+      ${statCard("Maintenance rooms", r.under_maintenance, { warn: r.under_maintenance > 0, page: can("rooms") ? "rooms" : null })}
       ${statCard("Occupied beds", `${r.beds_used} / ${r.beds}`)}
-      ${statCard("Pending fines", s.fines.unpaid_count, { warn: s.fines.unpaid_count > 0, page: can("fines") ? "fines" : null })}
       ${statCard("Active repairs", s.repairs.open, { page: can("repairs") ? "repairs" : null, hint: s.repairs.urgent ? `${s.repairs.urgent} urgent` : "" })}
     </div>
 
     <h3 class="section-title">Damage and money</h3>
     <div class="stats">
       ${statCard("Damaged items", s.items.damaged, { warn: s.items.damaged > 0, page: can("items") ? "items" : null, hint: `of ${s.items.total} items` })}
-      ${statCard("Damage cost (confirmed)", money(s.damage.total_cost), { page: can("damage") ? "damage" : null })}
-      ${statCard("Unpaid fines", money(s.fines.unpaid_amount), { warn: s.fines.overdue > 0, hint: s.fines.overdue ? `${s.fines.overdue} overdue` : `${s.fines.unpaid_count} fines` })}
-      ${statCard("Paid fines", money(s.fines.paid_amount), { hint: `${s.fines.paid_count} fines` })}
-      ${statCard("Fees received", money(s.fees.received), { page: can("fees") ? "fees" : null })}
-      ${statCard("Fees invoiced", money(s.fees.invoiced))}
-      ${statCard("Unpaid fees", s.fees.unpaid_count, { warn: s.fees.overdue > 0, hint: s.fees.overdue ? `${s.fees.overdue} overdue` : "" })}
-      ${statCard("Repairs finished", s.repairs.finished)}
+      ${statCard("Unpaid fines", money(s.fines.unpaid_amount), { warn: s.fines.overdue > 0, page: can("fines") ? "fines" : null, hint: s.fines.overdue ? `${s.fines.overdue} overdue` : `${s.fines.unpaid_count} fines` })}
+      ${statCard("Fees received", money(s.fees.received), { page: can("fees") ? "fees" : null, hint: `of ${money(s.fees.invoiced)} invoiced` })}
+      ${statCard("Unpaid fees", s.fees.unpaid_count, { warn: s.fees.overdue > 0, page: can("fees") ? "fees" : null, hint: s.fees.overdue ? `${s.fees.overdue} overdue` : "invoices" })}
     </div>
 
     <h3 class="section-title">Maintenance</h3>

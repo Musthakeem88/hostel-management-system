@@ -28,6 +28,7 @@ async function overview() {
       used: await num("SELECT CAST(COUNT(*) AS INTEGER) AS n FROM rooms WHERE occupied > 0"),
       available: await num("SELECT CAST(COUNT(*) AS INTEGER) AS n FROM rooms WHERE under_maintenance = FALSE AND occupied < capacity"),
       full: await num("SELECT CAST(COUNT(*) AS INTEGER) AS n FROM rooms WHERE occupied >= capacity"),
+      under_maintenance: await num("SELECT CAST(COUNT(*) AS INTEGER) AS n FROM rooms WHERE under_maintenance = TRUE"),
       beds: Number(rooms.beds),
       beds_used: Number(rooms.used)
     },
