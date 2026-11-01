@@ -1,3 +1,8 @@
+/* =========================================================
+   js/theme.js  —  light / dark mode
+   Loaded in <head> so the theme is applied before the page paints.
+   Order of preference: saved choice -> system setting.
+========================================================= */
 (function () {
   var KEY = "hostel-theme";
   var root = document.documentElement;
@@ -34,13 +39,15 @@
   document.addEventListener("DOMContentLoaded", function () {
     apply(root.getAttribute("data-theme"));
 
-    var button = document.getElementById("theme-toggle");
-    if (!button) return;
+    ["theme-toggle", "login-theme"].forEach(function (id) {
+      var button = document.getElementById(id);
+      if (!button) return;
 
-    button.addEventListener("click", function () {
-      var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
-      save(next);
-      apply(next);
+      button.addEventListener("click", function () {
+        var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        save(next);
+        apply(next);
+      });
     });
   });
 

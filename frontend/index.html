@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#1f3a41">
+  <meta name="description" content="Hostel Management System">
   <title>Hostel Management System</title>
 
   <script src="/js/theme.js"></script>
@@ -12,79 +13,123 @@
   <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/layout.css">
   <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/app.css">
   <link rel="stylesheet" href="/css/responsive.css">
 </head>
 <body>
   <a class="skip-link" href="#view">Skip to content</a>
 
-  <aside class="side">
-    <h1 class="brand">Hostel <br>Management</h1>
+  <!-- ===================== Sign in / create student account ===================== -->
+  <main id="login" class="login" hidden>
+    <div class="login-card">
+      <div class="login-brand">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6"/></svg>
+        <div><h1>Hostel Management</h1><p class="muted">University hostel rooms, items, repairs and fees</p></div>
+      </div>
 
-    <nav id="nav" aria-label="Main">
-      <button type="button" data-view="dashboard" class="active">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
-        <span><span class="long">Dashboard</span><span class="short">Home</span></span>
-      </button>
-      <button type="button" data-view="rooms">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v17"/><path d="M3 21h18"/><circle cx="15" cy="12" r="1"/></svg>
-        <span>Rooms</span>
-      </button>
-      <button type="button" data-view="students">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18 14.5c2 .7 3.5 2.6 3.5 5.5"/></svg>
-        <span>Students</span>
-      </button>
-      <button type="button" data-view="inspections">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="m9 13 2 2 4-4"/></svg>
-        <span><span class="long">Inspections</span><span class="short">Inspect</span></span>
-      </button>
-      <button type="button" data-view="damage">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/></svg>
-        <span><span class="long">Damage and fines</span><span class="short">Fines</span></span>
-      </button>
-      <button type="button" data-view="repairs">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0 5 5l-9.4 9.4a2.1 2.1 0 0 1-3-3l9.4-9.4z"/></svg>
-        <span>Repairs</span>
-      </button>
-      <button type="button" data-view="maintenance">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 5.5 18.5 11 16 13.5 10.5 8z"/><path d="M12 12.5 4.5 20"/></svg>
-        <span><span class="long">Maintenance</span><span class="short">Maint.</span></span>
-      </button>
-    </nav>
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" data-auth-tab="signin" class="active">Sign in</button>
+        <button type="button" role="tab" data-auth-tab="signup">New student</button>
+      </div>
 
-    <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to dark mode" title="Switch to dark mode">
-      <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
-      <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-      <span class="theme-label"></span>
-    </button>
-  </aside>
+      <form id="signin-form" data-form="signin" autocomplete="on">
+        <label>Username, email or student number
+          <input name="username" autocomplete="username" required autofocus>
+        </label>
+        <label>Password
+          <input name="password" type="password" autocomplete="current-password" required>
+        </label>
+        <label class="check"><input type="checkbox" name="remember"> Keep me signed in on this device</label>
+        <p class="form-error" id="signin-error" role="alert" hidden></p>
+        <button class="btn" type="submit">Sign in</button>
+      </form>
 
-  <main class="main">
-    <header class="top">
-      <h2 id="title">Dashboard</h2>
-      <span class="muted" id="today"></span>
-    </header>
+      <form id="signup-form" data-form="signup" autocomplete="on" hidden>
+        <div class="form">
+          <label>Student number *<input name="student_number" required maxlength="30"></label>
+          <label>Full name *<input name="full_name" autocomplete="name" required maxlength="120"></label>
+          <label>Email *<input name="email" type="email" autocomplete="email" required maxlength="150"></label>
+          <label>Phone<input name="phone" type="tel" autocomplete="tel" maxlength="30"></label>
+          <label>Password * <input name="password" type="password" autocomplete="new-password" required minlength="8"></label>
+        </div>
+        <p class="muted small">At least 8 characters with letters and numbers. If the hostel already registered you, use the same email.</p>
+        <p class="form-error" id="signup-error" role="alert" hidden></p>
+        <button class="btn" type="submit">Create account</button>
+      </form>
 
-    <section id="view" tabindex="-1"></section>
+      <p class="muted small login-foot">Staff accounts are created by the hostel administrator. Forgot your password? Ask the hostel office to reset it.</p>
+      <button type="button" class="btn ghost small" id="login-theme">Switch light / dark</button>
+    </div>
   </main>
 
-  <dialog id="modal" class="modal" aria-label="Maintenance details">
-    <div id="modal-body" class="modal-body"></div>
-  </dialog>
+  <!-- ===================== The application ===================== -->
+  <div id="app" hidden>
+    <aside class="side">
+      <h1 class="brand">Hostel <br>Management</h1>
+      <nav id="nav" aria-label="Main"></nav>
 
+      <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to dark mode" title="Switch to dark mode">
+        <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <span class="theme-label"></span>
+      </button>
+    </aside>
+
+    <main class="main">
+      <header class="top">
+        <h2 id="title">Dashboard</h2>
+        <div class="top-tools">
+          <form id="search-form" role="search" autocomplete="off" hidden>
+            <input type="search" id="search" placeholder="Search students, rooms, items…" aria-label="Search" maxlength="60">
+            <div id="search-results" class="search-results" hidden></div>
+          </form>
+          <button type="button" id="bell" class="icon-btn" aria-label="Notifications" title="Notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+            <span id="bell-count" class="count" hidden>0</span>
+          </button>
+          <button type="button" id="user-menu" class="user-chip" aria-label="Account menu">
+            <span class="avatar" id="avatar">?</span><span id="user-name"></span>
+          </button>
+        </div>
+      </header>
+
+      <section id="view" tabindex="-1" aria-live="polite"></section>
+    </main>
+  </div>
+
+  <dialog id="modal" class="modal" aria-label="Details"><div id="modal-body" class="modal-body"></div></dialog>
+  <dialog id="modal2" class="modal" aria-label="Form"><div id="modal2-body" class="modal-body"></div></dialog>
+  <dialog id="lightbox" class="modal lightbox" aria-label="Photo"><button type="button" class="icon-btn" data-action="close-lightbox" aria-label="Close">&times;</button><img id="lightbox-img" alt="Photo"></dialog>
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <!-- Scripts run in this order and share one global scope -->
-  <script src="/js/config.js"></script>
-  <script src="/js/utils.js"></script>
-  <script src="/js/api.js"></script>
-  <script src="/js/views/dashboard.js"></script>
-  <script src="/js/views/rooms.js"></script>
-  <script src="/js/views/students.js"></script>
-  <script src="/js/views/inspections.js"></script>
-  <script src="/js/views/damage.js"></script>
-  <script src="/js/views/repairs.js"></script>
-  <script src="/js/views/maintenance.js"></script>
-  <script src="/js/actions.js"></script>
-  <script src="/js/app.js"></script>
+  <!-- scripts run in this order and share one global scope -->
+  <script src="/js/core/config.js"></script>
+  <script src="/js/core/utils.js"></script>
+  <script src="/js/core/api.js"></script>
+  <script src="/js/core/modal.js"></script>
+  <script src="/js/core/photos.js"></script>
+  <script src="/js/core/auth.js"></script>
+
+  <script src="/js/pages/dashboard.js"></script>
+  <script src="/js/pages/myroom.js"></script>
+  <script src="/js/pages/rooms.js"></script>
+  <script src="/js/pages/students.js"></script>
+  <script src="/js/pages/items.js"></script>
+  <script src="/js/pages/inspections.js"></script>
+  <script src="/js/pages/damage.js"></script>
+  <script src="/js/pages/fines.js"></script>
+  <script src="/js/pages/repairs.js"></script>
+  <script src="/js/pages/maintenance.js"></script>
+  <script src="/js/pages/applications.js"></script>
+  <script src="/js/pages/fees.js"></script>
+  <script src="/js/pages/reports.js"></script>
+  <script src="/js/pages/notifications.js"></script>
+  <script src="/js/pages/users.js"></script>
+  <script src="/js/pages/audit.js"></script>
+  <script src="/js/pages/settings.js"></script>
+  <script src="/js/pages/profile.js"></script>
+  <script src="/js/pages/modules.js"></script>
+
+  <script src="/js/core/app.js"></script>
 </body>
 </html>

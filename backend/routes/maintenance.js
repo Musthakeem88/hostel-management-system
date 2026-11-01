@@ -1,148 +1,48 @@
-
 const express = require("express");
 const pool = require("../db");
+const { requireRole } = require("../lib/auth");
+const { audit } = require("../lib/audit");
+const { notifyUsers, notifyRoles } = require("../lib/notify");
+const { roomId } = require("../lib/validate");
 
 const router = express.Router();
 
-const TYPES = [
-  "Electrical",
-  "Plumbing",
-  "Furniture",
-  "Cleaning"
-];
+const TYPES = ["Electrical", "Plumbing", "Furniture", "Cleaning"];
+const STATUSES = ["Pending", "In Progress", "Completed"];
 
-const STATUSES = [
-  "Pending",
-  "In Progress",
-  "Completed"
-];
-
+// Dates are returned as plain YYYY-MM-DD text so time zones can never shift them.
 const COLUMNS = `
-  maintenance_id,
-  room_block,
-  room_floor,
-  room_number,
-  maintenance_type,
-  description,
-  assigned_staff,
-  status,
-  TO_CHAR(reported_date, 'YYYY-MM-DD') AS reported_date,
-  TO_CHAR(expected_completion_date, 'YYYY-MM-DD') AS expected_completion_date,
-  TO_CHAR(completed_date, 'YYYY-MM-DD') AS completed_date
+  maintenance_id, room_block, room_floor, room_number,
+  maintenance_type, description, assigned_staff, assigned_user_id, status,
+  to_char(reported_date, 'YYYY-MM-DD') AS reported_date,
+  to_char(expected_completion_date, 'YYYY-MM-DD') AS expected_completion_date,
+  to_char(completed_date, 'YYYY-MM-DD') AS completed_date
 `;
 
-let tableReady = null;
-
-/* ---------- Create table if needed ---------- */
-
-function ensureTable() {
-  if (!tableReady) {
-    tableReady = pool.query(`
-      CREATE TABLE IF NOT EXISTS public.maintenance_requests (
-        maintenance_id SERIAL PRIMARY KEY,
-        room_block VARCHAR(10) NOT NULL,
-        room_floor INTEGER NOT NULL,
-        room_number INTEGER NOT NULL,
-        maintenance_type VARCHAR(20) NOT NULL,
-        description TEXT NOT NULL,
-        assigned_staff VARCHAR(100),
-        status VARCHAR(20) NOT NULL DEFAULT 'Pending',
-        reported_date DATE NOT NULL DEFAULT CURRENT_DATE,
-        expected_completion_date DATE,
-        completed_date DATE,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `).catch((error) => {
-      tableReady = null;
-      throw error;
-    });
-  }
-
-  return tableReady;
+function isDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 }
-
-/* ---------- Ensure database table exists ---------- */
-
-router.use(async (req, res, next) => {
-  try {
-    await ensureTable();
-    next();
-  } catch (error) {
-    console.error("Maintenance table error:", error);
-
-    return res.status(500).json({
-      error: "Maintenance table could not be initialized."
-    });
-  }
-});
-
-/* ---------- Helpers ---------- */
 
 function clean(value) {
   return String(value ?? "").trim();
 }
 
-function isDate(value) {
-  if (
-    typeof value !== "string" ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(value)
-  ) {
-    return false;
-  }
-
-  const date = new Date(`${value}T00:00:00Z`);
-
-  return (
-    !Number.isNaN(date.getTime()) &&
-    date.toISOString().slice(0, 10) === value
-  );
-}
-
+// Reads and validates the fields shared by "add" and "edit".
 function readFields(body) {
   const maintenanceType = clean(body.maintenance_type);
   const description = clean(body.description);
   const staff = clean(body.assigned_staff);
   const status = clean(body.status) || "Pending";
-  const reported = clean(body.reported_date);
   const expected = clean(body.expected_completion_date);
 
-  if (!TYPES.includes(maintenanceType)) {
-    return { error: "Select a valid maintenance type." };
-  }
-
-  if (!description) {
-    return { error: "Problem description is required." };
-  }
-
-  if (description.length > 1000) {
-    return {
-      error: "Description cannot exceed 1000 characters."
-    };
-  }
-
-  if (staff.length > 100) {
-    return {
-      error: "Assigned staff cannot exceed 100 characters."
-    };
-  }
-
-  if (!STATUSES.includes(status)) {
-    return { error: "Invalid maintenance status." };
-  }
-
-  if (reported && !isDate(reported)) {
-    return { error: "Reported date is invalid." };
-  }
-
-  if (expected && !isDate(expected)) {
-    return { error: "Expected completion date is invalid." };
-  }
-
-  if (reported && expected && expected < reported) {
-    return {
-      error: "Expected completion cannot be before the reported date."
-    };
-  }
+  if (!TYPES.includes(maintenanceType)) return { error: "Select a valid maintenance type." };
+  if (!description) return { error: "Problem description is required." };
+  if (description.length > 1000) return { error: "Problem description is too long (max 1000 characters)." };
+  if (staff.length > 100) return { error: "Assigned staff name is too long (max 100 characters)." };
+  if (!STATUSES.includes(status)) return { error: "Invalid status." };
+  if (expected && !isDate(expected)) return { error: "Expected completion date is not a valid date." };
 
   return {
     value: {
@@ -150,307 +50,222 @@ function readFields(body) {
       description,
       staff: staff || null,
       status,
-      reported: reported || null,
       expected: expected || null
     }
   };
 }
 
-function parseId(value) {
-  const id = Number(value);
-
-  return Number.isInteger(id) && id > 0 ? id : null;
+async function resolveAssignee(body) {
+  const id = body.assigned_user_id;
+  if (id == null || id === "") return { id: null, name: null };
+  const r = await pool.query("SELECT user_id, full_name FROM users WHERE user_id = $1 AND role = 'maintenance' AND status = 'Active'", [Number(id)]);
+  if (!r.rows.length) return { error: "Choose an active maintenance staff member." };
+  return { id: r.rows[0].user_id, name: r.rows[0].full_name };
 }
 
-/* ---------- List maintenance requests ---------- */
-
-router.get("/", async (req, res) => {
+// List
+router.get("/", requireRole("warden", "administrator", "maintenance", "management"), async (req, res) => {
   try {
+    const mine = req.user.role === "maintenance";
     const result = await pool.query(`
       SELECT ${COLUMNS}
       FROM public.maintenance_requests
+      ${mine ? "WHERE assigned_user_id = $1 OR LOWER(assigned_staff) = LOWER($2)" : ""}
       ORDER BY maintenance_id DESC
-    `);
+    `, mine ? [req.user.id, req.user.name] : []);
 
-    return res.json(result.rows);
+    res.json(result.rows);
   } catch (error) {
     console.error("Error fetching maintenance:", error);
-
-    return res.status(500).json({
-      error: "Could not load maintenance requests."
-    });
+    res.status(500).json({ error: "Could not load maintenance requests." });
   }
 });
 
-/* ---------- Add maintenance request ---------- */
-
-router.post("/", async (req, res) => {
+// Add
+router.post("/", requireRole("warden", "administrator"), async (req, res) => {
   const body = req.body || {};
-
   const block = clean(body.room_block);
   const floor = Number(body.room_floor);
   const roomNumber = Number(body.room_number);
+  const reported = clean(body.reported_date);
 
-  if (
-    !block ||
-    !Number.isInteger(floor) ||
-    !Number.isInteger(roomNumber) ||
-    floor < 1 ||
-    roomNumber < 1
-  ) {
-    return res.status(400).json({
-      error: "Please select a valid room."
-    });
+  if (!block || !Number.isInteger(floor) || !Number.isInteger(roomNumber)) {
+    return res.status(400).json({ error: "Select a valid room." });
+  }
+
+  if (reported && !isDate(reported)) {
+    return res.status(400).json({ error: "Reported date is not a valid date." });
   }
 
   const fields = readFields(body);
 
-  if (fields.error) {
-    return res.status(400).json({
-      error: fields.error
-    });
+  if (fields.error) return res.status(400).json({ error: fields.error });
+
+  const assignee = await resolveAssignee(body);
+  if (assignee.error) return res.status(400).json({ error: assignee.error });
+
+  const { maintenanceType, description, status, expected } = fields.value;
+  const staff = assignee.name || fields.value.staff;
+
+  if (expected && expected < (reported || new Date().toISOString().slice(0, 10))) {
+    return res.status(400).json({ error: "Expected completion cannot be before the reported date." });
   }
 
-  const {
-    maintenanceType,
-    description,
-    staff,
-    status,
-    reported,
-    expected
-  } = fields.value;
-
   try {
-    const roomResult = await pool.query(
-      `SELECT id
-       FROM public.rooms
-       WHERE TRIM(block::text) = TRIM($1::text)
-         AND floor = $2::integer
-         AND room_number = $3::integer`,
+    const room = await pool.query(
+      `SELECT 1 FROM public.rooms
+       WHERE block = $1 AND floor = $2 AND room_number = $3`,
       [block, floor, roomNumber]
     );
 
-    if (roomResult.rows.length === 0) {
-      return res.status(404).json({
-        error: "Room not found. Check the selected room."
-      });
+    if (room.rows.length === 0) {
+      return res.status(404).json({ error: "Room not found." });
     }
 
     const result = await pool.query(
-      `INSERT INTO public.maintenance_requests (
-        room_block,
-        room_floor,
-        room_number,
-        maintenance_type,
-        description,
-        assigned_staff,
-        status,
-        reported_date,
-        expected_completion_date,
-        completed_date
-      )
-      VALUES (
-        $1::varchar,
-        $2::integer,
-        $3::integer,
-        $4::varchar,
-        $5::text,
-        $6::varchar,
-        $7::varchar,
-        COALESCE($8::date, CURRENT_DATE),
-        $9::date,
-        CASE
-          WHEN $7::varchar = 'Completed'
-          THEN CURRENT_DATE
-          ELSE NULL
-        END
-      )
-      RETURNING ${COLUMNS}`,
-      [
-        block,
-        floor,
-        roomNumber,
-        maintenanceType,
-        description,
-        staff,
-        status,
-        reported,
-        expected
-      ]
+      `INSERT INTO public.maintenance_requests
+         (room_block, room_floor, room_number, maintenance_type, description,
+          assigned_staff, status, reported_date, expected_completion_date, completed_date,
+          assigned_user_id, created_by, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE($8::date, CURRENT_DATE), $9::date,
+               CASE WHEN $7 = 'Completed' THEN CURRENT_DATE ELSE NULL END, $10, $11, CURRENT_TIMESTAMP)
+       RETURNING ${COLUMNS}`,
+      [block, floor, roomNumber, maintenanceType, description, staff, status, reported || null, expected, assignee.id, req.user.id]
     );
 
-    return res.status(201).json({
+    const where = roomId(block, floor, roomNumber);
+    if (assignee.id) await notifyUsers([assignee.id], { title: "New maintenance job", message: `${maintenanceType} in room ${where}: ${description.slice(0, 100)}`, type: "maintenance", page: "maintenance", related_id: result.rows[0].maintenance_id });
+    await audit(req, "create_maintenance", "maintenance", result.rows[0].maintenance_id, { room: where, type: maintenanceType });
+
+    res.status(201).json({
       message: "Maintenance request added successfully.",
       maintenance: result.rows[0]
     });
   } catch (error) {
     console.error("Error adding maintenance:", error);
-
-    return res.status(500).json({
-      error: "Could not add the maintenance request."
-    });
+    res.status(500).json({ error: "Could not add the maintenance request." });
   }
 });
 
-/* ---------- Edit maintenance request ---------- */
+// Check that a request exists and is not completed (completed requests are locked)
+async function notFoundOrLocked(id, res) {
+  const existing = await pool.query(
+    "SELECT status FROM public.maintenance_requests WHERE maintenance_id = $1",
+    [id]
+  );
 
-router.put("/:id", async (req, res) => {
-  const id = parseId(req.params.id);
+  if (existing.rows.length === 0) {
+    res.status(404).json({ error: "Maintenance request not found." });
+  } else {
+    res.status(409).json({ error: "Completed maintenance requests cannot be changed." });
+  }
+}
 
-  if (!id) {
-    return res.status(400).json({
-      error: "Invalid maintenance ID."
-    });
+// Edit
+router.put("/:id", requireRole("warden", "administrator"), async (req, res) => {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: "Invalid maintenance ID." });
   }
 
   const fields = readFields(req.body || {});
 
-  if (fields.error) {
-    return res.status(400).json({
-      error: fields.error
-    });
-  }
+  if (fields.error) return res.status(400).json({ error: fields.error });
 
-  const {
-    maintenanceType,
-    description,
-    staff,
-    status,
-    reported,
-    expected
-  } = fields.value;
+  const assignee = await resolveAssignee(req.body || {});
+  if (assignee.error) return res.status(400).json({ error: assignee.error });
+
+  const { maintenanceType, description, status, expected } = fields.value;
+  const staff = assignee.name || fields.value.staff;
 
   try {
-    // Retrieve the existing request.
-    // TO_CHAR ensures reported_date is returned as YYYY-MM-DD.
-    const existing = await pool.query(
-      `SELECT
-         status,
-         TO_CHAR(reported_date, 'YYYY-MM-DD') AS reported_date
-       FROM public.maintenance_requests
-       WHERE maintenance_id = $1::integer`,
-      [id]
-    );
-
-    if (existing.rows.length === 0) {
-      return res.status(404).json({
-        error: "Maintenance request not found."
-      });
-    }
-
-    if (existing.rows[0].status === "Completed") {
-      return res.status(409).json({
-        error: "Completed maintenance requests cannot be edited."
-      });
-    }
-
-    const existingReported = existing.rows[0].reported_date;
-    const finalReported = reported || existingReported;
-
-    // Compare dates in YYYY-MM-DD format.
-    if (expected && finalReported && expected < finalReported) {
-      return res.status(400).json({
-        error: `Expected completion (${expected}) cannot be before the reported date (${finalReported}).`
-      });
-    }
-
     const result = await pool.query(
       `UPDATE public.maintenance_requests
-       SET maintenance_type = $1::varchar,
-           description = $2::text,
-           assigned_staff = $3::varchar,
-           status = $4::varchar,
-           reported_date = COALESCE($5::date, reported_date),
-           expected_completion_date = $6::date,
-           completed_date = CASE
-             WHEN $4::varchar = 'Completed'
-             THEN CURRENT_DATE
-             ELSE NULL
-           END
-       WHERE maintenance_id = $7::integer
+       SET maintenance_type = $1,
+           description = $2,
+           assigned_staff = $3,
+           assigned_user_id = $7,
+           status = $4,
+           expected_completion_date = $5::date,
+           completed_date = CASE WHEN $4 = 'Completed' THEN CURRENT_DATE ELSE NULL END
+       WHERE maintenance_id = $6
          AND status <> 'Completed'
+         AND ($5::date IS NULL OR $5::date >= reported_date)
        RETURNING ${COLUMNS}`,
-      [
-        maintenanceType,
-        description,
-        staff,
-        status,
-        reported,
-        expected,
-        id
-      ]
+      [maintenanceType, description, staff, status, expected, id, assignee.id]
     );
 
     if (result.rows.length === 0) {
-      return res.status(409).json({
-        error: "This request can no longer be edited."
-      });
+      // Could be: missing, locked, or the date check failed.
+      const existing = await pool.query(
+        "SELECT status FROM public.maintenance_requests WHERE maintenance_id = $1",
+        [id]
+      );
+
+      if (existing.rows.length === 0) {
+        return res.status(404).json({ error: "Maintenance request not found." });
+      }
+
+      if (existing.rows[0].status === "Completed") {
+        return res.status(409).json({ error: "Completed maintenance requests cannot be changed." });
+      }
+
+      return res.status(400).json({ error: "Expected completion cannot be before the reported date." });
     }
 
-    return res.json({
+    if (assignee.id) await notifyUsers([assignee.id], { title: "Maintenance job assigned", message: `${maintenanceType}: ${description.slice(0, 100)}`, type: "maintenance", page: "maintenance", related_id: id });
+    await audit(req, "update_maintenance", "maintenance", id, { status });
+
+    res.json({
       message: "Maintenance request updated successfully.",
       maintenance: result.rows[0]
     });
   } catch (error) {
     console.error("Error updating maintenance:", error);
-
-    return res.status(500).json({
-      error: "Could not update the maintenance request."
-    });
+    res.status(500).json({ error: "Could not update the maintenance request." });
   }
 });
 
-/* ---------- Mark request as completed ---------- */
+// Mark as completed
+router.patch("/:id/complete", requireRole("warden", "administrator", "maintenance"), async (req, res) => {
+  const id = Number(req.params.id);
 
-router.patch("/:id/complete", async (req, res) => {
-  const id = parseId(req.params.id);
-
-  if (!id) {
-    return res.status(400).json({
-      error: "Invalid maintenance ID."
-    });
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: "Invalid maintenance ID." });
   }
 
   try {
+    if (req.user.role === "maintenance") {
+      const own = await pool.query("SELECT assigned_user_id, assigned_staff FROM public.maintenance_requests WHERE maintenance_id = $1", [id]);
+      if (own.rows.length && Number(own.rows[0].assigned_user_id) !== req.user.id && String(own.rows[0].assigned_staff || "").toLowerCase() !== req.user.name.toLowerCase()) {
+        return res.status(403).json({ error: "This job is not assigned to you." });
+      }
+    }
+
     const result = await pool.query(
       `UPDATE public.maintenance_requests
-       SET status = 'Completed',
-           completed_date = CURRENT_DATE
-       WHERE maintenance_id = $1::integer
-         AND status <> 'Completed'
+       SET status = 'Completed', completed_date = CURRENT_DATE
+       WHERE maintenance_id = $1 AND status <> 'Completed'
        RETURNING ${COLUMNS}`,
       [id]
     );
 
     if (result.rows.length === 0) {
-      const existing = await pool.query(
-        `SELECT status
-         FROM public.maintenance_requests
-         WHERE maintenance_id = $1::integer`,
-        [id]
-      );
-
-      if (existing.rows.length === 0) {
-        return res.status(404).json({
-          error: "Maintenance request not found."
-        });
-      }
-
-      return res.status(409).json({
-        error: "This request is already completed and locked."
-      });
+      return notFoundOrLocked(id, res);
     }
 
-    return res.json({
+    const done = result.rows[0];
+    await notifyRoles(["warden", "administrator"], { title: "Maintenance completed", message: `${done.maintenance_type} in room ${roomId(done.room_block, done.room_floor, done.room_number)} was completed by ${req.user.name}.`, type: "maintenance", page: "maintenance", related_id: id });
+    await audit(req, "complete_maintenance", "maintenance", id);
+
+    res.json({
       message: "Maintenance marked as completed.",
       maintenance: result.rows[0]
     });
   } catch (error) {
     console.error("Error completing maintenance:", error);
-
-    return res.status(500).json({
-      error: "Could not complete the maintenance request."
-    });
+    res.status(500).json({ error: "Could not complete the maintenance request." });
   }
 });
 

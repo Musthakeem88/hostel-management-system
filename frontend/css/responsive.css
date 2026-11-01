@@ -1,3 +1,8 @@
+/* =========================================================
+   css/responsive.css  —  tablet, phone, touch, print, motion
+   Same features everywhere; only the layout adapts.
+========================================================= */
+
 /* ---------- Large screens ---------- */
 @media (min-width: 1500px) {
   :root { --side-w: 260px; }
@@ -11,7 +16,7 @@
 
 /* ---------- Tablet & phone: top bar + bottom tab bar ---------- */
 @media (max-width: 860px) {
-  body { grid-template-columns: minmax(0, 1fr); }
+  #app { grid-template-columns: minmax(0, 1fr); }
 
   .side {
     position: sticky; top: 0; z-index: 20;
@@ -48,6 +53,14 @@
   #nav button.active { background: var(--brand-l); color: var(--brand); box-shadow: none; }
   #nav .long { display: none; }
   #nav .short { display: inline; }
+  #nav .nav-group, #nav .count { display: none; }
+  #nav button:not(.primary):not(#more-btn) { display: none; }
+  #nav button.primary { order: var(--o, 0); }
+  #nav #more-btn { display: flex; order: 99; }
+  #nav button .badge-dot { position: absolute; top: 6px; right: calc(50% - 18px); width: 9px; height: 9px; border-radius: 50%; background: var(--red); }
+  #nav button { position: relative; }
+  .top-tools { width: 100%; }
+  #search-form { flex: 1 1 auto; width: auto; }
 
   .main {
     padding-left: max(var(--pad), env(safe-area-inset-left));
@@ -76,6 +89,13 @@
 /* ---------- Phones: tables become stacked cards ---------- */
 @media (max-width: 640px) {
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .grid-2, .grid-3 { grid-template-columns: minmax(0, 1fr); }
+  .check-row { grid-template-columns: 1fr; }
+  .check-row .seg { justify-self: start; }
+  .toolbar input, .toolbar select { width: 100%; }
+  .user-chip #user-name { display: none; }
+  .user-chip { padding: 4px; }
+  dialog.modal.wide { width: 100%; }
   .stat { padding: 14px 14px 14px 16px; }
   .form, .items { grid-template-columns: minmax(0, 1fr); }
   form > .btn { width: 100%; }

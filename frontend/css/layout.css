@@ -1,3 +1,7 @@
+/* =========================================================
+   css/layout.css  —  page shell: reset, sidebar, header, content area
+========================================================= */
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; }
 
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
@@ -10,11 +14,18 @@ body {
   background:
     radial-gradient(900px 400px at 100% -10%, var(--bg-glow), transparent 60%),
     var(--bg);
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+#app {
   display: grid;
   grid-template-columns: var(--side-w) minmax(0, 1fr);
   min-height: 100vh;
   min-height: 100dvh;
 }
+
+#app[hidden], #login[hidden], [hidden] { display: none !important; }
 
 img, svg, video { max-width: 100%; height: auto; }
 
@@ -63,6 +74,7 @@ img, svg, video { max-width: 100%; height: auto; }
   box-shadow: 0 4px 12px rgba(0, 0, 0, .25);
 }
 #nav .short { display: none; }
+#nav button span.label { flex: 1; }
 
 /* ---------- Theme toggle ---------- */
 .theme-toggle {
