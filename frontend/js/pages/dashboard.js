@@ -7,7 +7,11 @@ function overdueJob(job) {
 }
 
 pages.dashboard = {
-  title: () => (isRole("student") ? `Hello, ${state.user.name.split(" ")[0]}` : "Dashboard"),
+  title: () => {
+    const hour = new Date().getHours();
+    const word = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+    return `${word}, ${state.user.name.split(" ")[0]}`;
+  },
 
   async load() {
     const role = state.user.role;
@@ -58,12 +62,20 @@ function staffDashboard() {
     b.cap += Number(room.capacity);
     b.occ += Number(room.occupied);
   });
-  const bars = Object.entries(blocks).map(([block, v]) => `
-    <div class="bar"><span>Block ${esc(block)}</span><i style="width:${v.cap ? Math.round((v.occ / v.cap) * 100) : 0}%"></i><b>${v.occ}/${v.cap}</b></div>`).join("");
+  // tall glass columns: the fullest block is highlighted in blue
+  const blockList = Object.entries(blocks).map(([block, v]) => ({ label: `Block ${block}`, pct: v.cap ? Math.round((v.occ / v.cap) * 100) : 0, text: `${v.occ}/${v.cap}` }));
+  const topPct = Math.max(0, ...blockList.map((x) => x.pct));
+  const bars = blockList.length ? `<div class="columns">${blockList.map((x) => `
+    <div class="col${x.pct === topPct ? " top" : ""}">
+      <b>${x.text}</b>
+      <div class="col-track"><i style="height:${Math.max(x.pct, 4)}%"></i></div>
+      <span>${esc(x.label)}</span>
+    </div>`).join("")}</div>` : "";
 
+  // ranked list with a coloured edge, like a schedule
   const maxDamaged = Math.max(1, ...s.damage.most_damaged.map((m) => m.total));
-  const damagedBars = s.damage.most_damaged.map((m) => `
-    <div class="bar"><span>${esc(m.item)}</span><i style="width:${Math.round((m.total / maxDamaged) * 100)}%"></i><b>${m.total}</b></div>`).join("");
+  const damagedBars = s.damage.most_damaged.length ? `<div class="ranked">${s.damage.most_damaged.map((m, i) => `
+    <div class="rank r${i % 4}"><div><b>${esc(m.item)}</b><small>${Math.round((m.total / maxDamaged) * 100)}% of the highest</small></div><span class="badge">${m.total}</span></div>`).join("")}</div>` : "";
 
   const mCount = (st) => maintenance.filter((j) => j.status === st).length;
   const mOver = maintenance.filter(overdueJob).length;
@@ -120,9 +132,9 @@ function staffDashboard() {
       ], openJobs, { empty: "No open maintenance jobs." })}
     </div>
 
-    <div class="grid-2">
-      <div class="card"><h3>Occupancy by block</h3>${bars || '<p class="empty">No rooms yet.</p>'}</div>
-      <div class="card"><h3>Most damaged items</h3>${damagedBars || '<p class="empty">No damage reports yet.</p>'}</div>
+    <div class="grid-2 wide">
+      <div class="card"><h3>Occupancy by block</h3><p class="card-sub muted">Beds in use compared with all beds</p>${bars || '<p class="empty">No rooms yet.</p>'}</div>
+      <div class="card"><h3>Most damaged items</h3><p class="card-sub muted">Number of damage reports</p>${damagedBars || '<p class="empty">No damage reports yet.</p>'}</div>
     </div>
 
     <div class="card">

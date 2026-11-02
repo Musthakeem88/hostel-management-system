@@ -19,7 +19,7 @@ function buildNav() {
     keys.forEach((key) => {
       const m = PAGE_META[key];
       const order = primary.indexOf(key);
-      html += `<button type="button" data-view="${key}"${order >= 0 ? ` class="primary" style="--o:${order}"` : ""}>
+      html += `<button type="button" data-view="${key}" data-tip="${esc(m.title)}" aria-label="${esc(m.title)}"${order >= 0 ? ` class="primary" style="--o:${order}"` : ""}>
         ${icon(m.icon)}
         <span class="label"><span class="long">${esc(m.title)}</span><span class="short">${esc(m.short)}</span></span>
         ${key === "notifications" ? '<span class="count" id="nav-count" hidden>0</span>' : ""}
@@ -29,11 +29,15 @@ function buildNav() {
 
   html += `<button type="button" id="more-btn" data-action="more">${icon("dashboard")}<span class="label"><span class="short">More</span></span></button>`;
   $("#nav").innerHTML = html;
+
+  // the pill menu at the top centre: the person's main pages
+  $("#topnav").innerHTML = primary.filter((k) => allowed.includes(k)).map((key) =>
+    `<button type="button" class="navpill" data-view="${key}">${icon(PAGE_META[key].icon)}<span>${esc(PAGE_META[key].short)}</span></button>`).join("");
   setActiveNav();
 }
 
 function setActiveNav() {
-  $$("#nav button[data-view]").forEach((b) => b.classList.toggle("active", b.dataset.view === current));
+  $$("#nav button[data-view], #topnav button[data-view]").forEach((b) => b.classList.toggle("active", b.dataset.view === current));
 }
 
 actions.more = () => {
@@ -58,6 +62,15 @@ async function show(key, { quiet = false } = {}) {
   current = key;
   setActiveNav();
   $("#title").textContent = typeof page.title === "function" ? page.title() : PAGE_META[key].title;
+  $("#subtitle").textContent = PAGE_SUB[key] || "";
+
+  if (!quiet) {                                   // play the entrance animation only when the page really changes
+    const head = $(".page-head");
+    head.classList.remove("swap"); void head.offsetWidth; head.classList.add("swap");
+    view.classList.add("entering");
+    clearTimeout(show.enterTimer);
+    show.enterTimer = setTimeout(() => view.classList.remove("entering"), 1400);
+  }
   document.title = `${PAGE_META[key].title} · Hostel Management`;
   if (!quiet) view.innerHTML = skeleton;
 
@@ -180,6 +193,7 @@ async function bootApp() {
   $("#app").hidden = false;
   $("#user-name").textContent = state.user.name;
   $("#avatar").textContent = (state.user.name || "?").trim().charAt(0).toUpperCase();
+  $("#user-menu").title = state.user.name;
   $("#search-form").hidden = !SEARCH_ROLES.includes(state.user.role);
   buildNav();
   setUnread(me.unread || 0);
@@ -210,7 +224,7 @@ document.addEventListener("click", (event) => {
   const goto = target.closest("[data-goto]");
   if (goto) { event.preventDefault(); closeModal("modal2"); go(goto.dataset.goto); return; }
 
-  const nav = target.closest("#nav button[data-view]");
+  const nav = target.closest("#nav button[data-view], #topnav button[data-view]");
   if (nav) { go(nav.dataset.view); return; }
 
   const open = target.closest("[data-open]");
@@ -261,4 +275,28 @@ document.addEventListener("keydown", (event) => {
     clearToken();
     showLogin();
   }
+})();
+
+
+/* ---------- icon dock: the name of a page appears beside its icon (hover, or keyboard focus) ---------- */
+(function dockTips() {
+  const tip = document.getElementById("dock-tip");
+  const nav = document.getElementById("nav");
+  if (!tip || !nav) return;
+
+  function show(button) {
+    if (!button || !button.dataset.tip || getComputedStyle(nav).position !== "fixed" || window.innerWidth <= 860) return;
+    const r = button.getBoundingClientRect();
+    tip.textContent = button.dataset.tip;
+    tip.hidden = false;
+    tip.style.top = `${r.top + r.height / 2}px`;
+    tip.style.left = `${r.right + 12}px`;
+  }
+  const hide = () => { tip.hidden = true; };
+
+  nav.addEventListener("mouseover", (e) => show(e.target.closest("button")));
+  nav.addEventListener("focusin", (e) => show(e.target.closest("button")));
+  nav.addEventListener("mouseleave", hide);
+  nav.addEventListener("focusout", hide);
+  nav.addEventListener("scroll", hide);
 })();

@@ -135,8 +135,19 @@ function dl(pairs) {
 const section = (text) => `<h4 class="section-sub">${esc(text)}</h4>`;
 const emptyCard = (title, hint = "") => `<div class="empty-card"><b>${esc(title)}</b>${esc(hint)}</div>`;
 
+/* the small coloured icon on each stat tile: [icon, colour] picked from the label */
+const STAT_LOOKS = [
+  [/damage report|damaged|damage/i, "damage", "amber"], [/maintenance|pending|progress|completed|overdue|job/i, "maintenance", "amber"],
+  [/repair/i, "repairs", "amber"], [/fine/i, "fines", "amber"], [/fee|invoice|payment|deposit|RM /i, "fees", "green"],
+  [/student|resident/i, "students", "purple"], [/room application|application/i, "applications", "blue"],
+  [/check-in|inspection/i, "inspections", "blue"], [/visitor/i, "visitors", "blue"], [/leave/i, "leaves", "purple"],
+  [/transfer/i, "transfers", "purple"], [/complaint/i, "complaints", "amber"], [/incident/i, "incidents", "red"],
+  [/item/i, "items", "blue"], [/notice/i, "notices", "blue"], [/key/i, "keys", "amber"], [/room|bed/i, "rooms", "blue"]
+];
+
 function statCard(label, value, { warn = false, page = null, hint = "" } = {}) {
-  const inner = `<b>${value}</b><span>${esc(label)}</span>${hint ? `<small>${esc(hint)}</small>` : ""}`;
+  const [, ico, tone] = STAT_LOOKS.find(([re]) => re.test(label)) || [null, "dashboard", "blue"];
+  const inner = `<i class="stat-ico t-${warn ? "red" : tone}">${icon(ico)}</i><b>${value}</b><span>${esc(label)}</span>${hint ? `<small>${esc(hint)}</small>` : ""}`;
   return page
     ? `<button type="button" class="stat clickable${warn ? " warn" : ""}" data-goto="${page}">${inner}</button>`
     : `<div class="stat${warn ? " warn" : ""}">${inner}</div>`;

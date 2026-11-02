@@ -64,6 +64,36 @@ const PAGE_META = {
 };
 
 // the four tabs shown at the bottom of a phone (the rest are under "More")
+/* the small grey sentence under each page title */
+const PAGE_SUB = {
+  dashboard: "Here is what is happening across the hostel today.",
+  myroom: "Your room, bed and the items in it.",
+  applications: "Room applications and the waiting list.",
+  rooms: "Every room, its beds and who lives there.",
+  students: "Student records, room allocation and check-out.",
+  items: "University property, its condition and history.",
+  inspections: "Check-in and check-out inspections with photos.",
+  damage: "Damage reports and the review decisions.",
+  fines: "Fines, appeals and payments.",
+  repairs: "Repair requests and who is fixing them.",
+  maintenance: "Maintenance jobs for rooms and buildings.",
+  fees: "Invoices, payments, receipts and deposits.",
+  visitors: "Visitor requests and approvals.",
+  leaves: "Leave and late-return requests.",
+  transfers: "Room transfer requests.",
+  complaints: "Complaints and feedback from students.",
+  notices: "Announcements for residents and staff.",
+  keys: "Who holds which room key.",
+  incidents: "Incident reports and follow-up.",
+  lostfound: "Items lost and found in the hostel.",
+  reports: "Reports to preview, print and download.",
+  users: "Accounts, roles and passwords.",
+  audit: "Who did what, and when.",
+  settings: "Fees, rules and system status.",
+  notifications: "Your latest alerts.",
+  profile: "Your details, documents and password."
+};
+
 const PRIMARY = {
   student: ["dashboard", "myroom", "repairs", "fines"],
   warden: ["dashboard", "inspections", "damage", "repairs"],
