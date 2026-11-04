@@ -9,8 +9,8 @@ router.get("/", requireRole("administrator"), async (req, res) => {
   const params = [];
   const where = [];
 
-  if (req.query.user) { params.push(`%${clean(req.query.user)}%`); where.push(`username ILIKE $${params.length}`); }
-  if (req.query.action) { params.push(`%${clean(req.query.action)}%`); where.push(`action ILIKE $${params.length}`); }
+  if (req.query.user) { params.push(`%${clean(req.query.user)}%`); where.push(`username LIKE $${params.length}`); }
+  if (req.query.action) { params.push(`%${clean(req.query.action)}%`); where.push(`action LIKE $${params.length}`); }
   if (req.query.entity) { params.push(clean(req.query.entity)); where.push(`entity_type = $${params.length}`); }
   if (req.query.from && isDate(String(req.query.from))) { params.push(String(req.query.from)); where.push(`to_char(created_at, 'YYYY-MM-DD') >= $${params.length}`); }
   if (req.query.to && isDate(String(req.query.to))) { params.push(String(req.query.to)); where.push(`to_char(created_at, 'YYYY-MM-DD') <= $${params.length}`); }

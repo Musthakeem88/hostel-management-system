@@ -85,4 +85,79 @@
       setTimeout(() => root.classList.remove("theme-fade"), 650);
     });
   });
+
+  /* ---------- 5. a highlight that GLIDES to the page you open (dock, pill menu, phone tab bar) ---------- */
+  function glide(container, itemSelector, className) {
+    if (!container) return;
+    let placed = false;
+
+    function place() {
+      let el = container.querySelector(":scope > ." + className);
+      if (!el) {
+        el = document.createElement("span");
+        el.className = className;
+        el.setAttribute("aria-hidden", "true");
+        container.prepend(el);
+        container.classList.add("has-glide");
+        placed = false;
+      }
+      const active = container.querySelector(itemSelector + ".active");
+      if (!active || active.offsetParent === null) { el.style.opacity = "0"; return; }
+      if (!placed) el.style.transition = "none";            // first time: appear in place, do not fly in from the corner
+      el.style.opacity = "1";
+      el.style.width = active.offsetWidth + "px";
+      el.style.height = active.offsetHeight + "px";
+      el.style.transform = `translate(${active.offsetLeft}px, ${active.offsetTop}px)`;
+      if (!placed) { void el.offsetWidth; el.style.transition = ""; placed = true; }
+    }
+
+    new MutationObserver(place).observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+    window.addEventListener("resize", place);
+    place();
+  }
+  glide(document.getElementById("nav"), "button", "glide");
+  glide(document.getElementById("topnav"), ".navpill", "glide-pill");
+
+  /* ---------- 6. the dock reacts to the cursor like a Mac dock: icons near the pointer swell ---------- */
+  const dock = document.getElementById("nav");
+  const wide = () => window.innerWidth > 860 && dock && getComputedStyle(dock).position === "fixed";
+
+  function dockReset() {
+    dock.querySelectorAll(":scope > button").forEach((b) => { b.style.removeProperty("--s"); b.style.removeProperty("--z"); });
+  }
+  if (dock && !calm) {
+    dock.addEventListener("pointermove", (event) => {
+      if (event.pointerType === "touch" || !wide()) return;
+      dock.querySelectorAll(":scope > button").forEach((b) => {
+        const r = b.getBoundingClientRect();
+        const distance = Math.abs(event.clientY - (r.top + r.height / 2));
+        const k = Math.exp(-Math.pow(distance / 58, 2));          // 1 under the pointer, fading with distance
+        b.style.setProperty("--s", (1 + 0.34 * k).toFixed(3));
+        b.style.setProperty("--z", String(Math.round(k * 10)));
+        const x = event.clientX - r.left, y = event.clientY - r.top;
+        b.style.setProperty("--mx", `${x}px`); b.style.setProperty("--my", `${y}px`);
+      });
+    }, { passive: true });
+    dock.addEventListener("pointerleave", dockReset);
+  }
+
+  /* ---------- 7. pills and round buttons lean toward the cursor (a gentle magnet) and glow under it ---------- */
+  const MAGNETS = ".navpill, .icon-btn, .user-chip";
+  if (!calm) {
+    document.addEventListener("pointermove", (event) => {
+      if (event.pointerType === "touch") return;
+      const el = event.target.closest && event.target.closest(MAGNETS);
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const dx = event.clientX - (r.left + r.width / 2), dy = event.clientY - (r.top + r.height / 2);
+      el.style.setProperty("--tx", `${(dx * 0.18).toFixed(1)}px`);
+      el.style.setProperty("--ty", `${(dy * 0.22).toFixed(1)}px`);
+      el.style.setProperty("--mx", `${event.clientX - r.left}px`);
+      el.style.setProperty("--my", `${event.clientY - r.top}px`);
+    }, { passive: true });
+    document.addEventListener("pointerout", (event) => {
+      const el = event.target.closest && event.target.closest(MAGNETS);
+      if (el && !el.contains(event.relatedTarget)) { el.style.removeProperty("--tx"); el.style.removeProperty("--ty"); }
+    });
+  }
 })();

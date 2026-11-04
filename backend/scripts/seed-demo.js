@@ -2,7 +2,8 @@
    Demo data: a small campus with residents, inspections, damage, fines, repairs, fees...
    Built through the real API so every business rule is followed.
 
-     npm run seed:demo            (uses the PostgreSQL database in .env)
+     npm run seed:demo            (uses the database in .env)
+     DB_DRIVER=sqlite SQLITE_FILE=demo.sqlite npm run seed:demo     (no PostgreSQL needed)
 
    All demo accounts use the password  Demo@1234
    accounts: admin (your own), warden, tech1, tech2, guard, manager, and students 20260001 ... 20260007
@@ -232,6 +233,10 @@ async function main() {
 
   await call("POST", "/api/m/lostfound", { kind: "Lost", item_name: "Blue water bottle", description: "Metal bottle with a dent", location: "Study room" }, tokens["20260002"]);
   await call("POST", "/api/m/lostfound", { kind: "Found", item_name: "Keys on a red lanyard", location: "Main gate" }, guard);
+
+  for (const [block, utility, date, value, cost] of [["A", "Electricity", addDays(today(), -60), 41200, 0], ["A", "Electricity", addDays(today(), -30), 42650, 612.5], ["B", "Electricity", addDays(today(), -30), 18800, 0], ["A", "Water", addDays(today(), -30), 930, 0], ["A", "Water", today(), 985, 96]]) {
+    await call("POST", "/api/m/utilities", { block, utility, reading_date: date, reading_value: value, cost }, admin);
+  }
 
   /* ----- scheduled jobs ----- */
   await runDailyChecks();

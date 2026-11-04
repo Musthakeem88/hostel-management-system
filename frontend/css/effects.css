@@ -116,23 +116,61 @@ body::after {
 #view.entering .rank:nth-child(4) { animation-delay: .46s; }
 #view.entering .rank:nth-child(5) { animation-delay: .53s; }
 
-/* ---------- 5. Dock: icons swell under the cursor, neighbours lean in (like a Mac dock) ---------- */
-#nav button { transition: transform .3s var(--spring), background .2s, color .2s, box-shadow .2s; }
-#nav button:hover { transform: scale(1.18); }
-#nav button:has(+ button:hover), #nav button:hover + button { transform: scale(1.07); }
-#nav button.active { animation: pop .5s var(--spring); }
-@keyframes pop { 0% { transform: scale(.7); } 100% { transform: scale(1); } }
-#dock-tip:not([hidden]) { animation: tip-in .22s var(--ease); }
-@keyframes tip-in { from { opacity: 0; translate: -6px 0; } to { opacity: 1; translate: 0 0; } }
+/* ---------- 5. Navigation: it reacts to the cursor, and the highlight glides between pages ---------- */
+/* dock icons: size comes from --s (set by js/effects.js while the cursor moves along the dock) */
+#nav button {
+  transform: scale(var(--s, 1)); z-index: calc(1 + var(--z, 0));
+  transition: transform .22s var(--ease), background .2s, color .2s, box-shadow .2s;
+}
+#nav button:hover { --s: 1.16; }
+#nav button svg { position: relative; z-index: 1; }
+#nav button:hover svg { animation: wiggle .6s var(--ease); }
+@keyframes wiggle { 0% { transform: rotate(0); } 25% { transform: rotate(-12deg) scale(1.1); } 60% { transform: rotate(8deg) scale(1.1); } 100% { transform: rotate(0) scale(1); } }
+/* a soft light under the cursor, inside each dock button */
+#nav button::before {
+  content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, .42), transparent 68%);
+  transition: opacity .25s;
+}
+#nav button:hover::before { opacity: 1; }
+:root[data-theme="light"] #nav button::before { background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, .9), transparent 68%); }
 
-/* pill menu + round buttons */
-.navpill, .icon-btn, .user-chip { transition: transform .25s var(--spring), background .2s, color .2s, box-shadow .2s; }
-.navpill:hover, .icon-btn:hover, .user-chip:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-.navpill:active, .icon-btn:active, .user-chip:active { transform: scale(.95); }
+/* the highlight that glides to the page you open */
+#nav .glide, .pillnav .glide-pill {
+  position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none;
+  transition: transform .6s var(--spring), width .45s var(--ease), height .45s var(--ease), opacity .3s;
+}
+#nav .glide { border-radius: 50%; background: #ffffff; box-shadow: 0 8px 22px rgba(0, 0, 0, .3), 0 0 26px -4px rgba(255, 255, 255, .5); }
+.pillnav { position: relative; }
+.pillnav .glide-pill { border-radius: 999px; background: var(--pill-on); border: 1px solid rgba(255, 255, 255, .16); box-shadow: 0 8px 22px rgba(0, 0, 0, .28); }
+.navpill { z-index: 1; }
+/* when the glide is present it draws the "you are here" mark, so the buttons themselves stay clear */
+#nav.has-glide button.active { background: none; box-shadow: none; animation: none; }
+.pillnav.has-glide .navpill.active { background: none; border-color: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+
+/* pills and round buttons: lean toward the cursor, glow under it */
+.navpill, .icon-btn, .user-chip {
+  transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(var(--s, 1));
+  transition: transform .28s var(--spring), background .2s, color .2s, box-shadow .2s;
+}
+.navpill:hover, .icon-btn:hover, .user-chip:hover { --s: 1.06; box-shadow: var(--shadow-md), 0 0 24px -8px var(--brand-glow); }
+.navpill:active, .icon-btn:active, .user-chip:active { --s: .94; }
+.navpill::after, .icon-btn::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0;
+  background: radial-gradient(90px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, .32), transparent 70%); transition: opacity .25s;
+}
+.navpill:hover::after, .icon-btn:hover::after { opacity: 1; }
+:root[data-theme="light"] .navpill::after, :root[data-theme="light"] .icon-btn::after { background: radial-gradient(90px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, .85), transparent 70%); }
 .theme-toggle svg { transition: transform .6s var(--spring); }
 .theme-toggle:hover svg { transform: rotate(40deg); }
+#dock-tip:not([hidden]) { animation: tip-in .22s var(--ease); }
+@keyframes tip-in { from { opacity: 0; translate: -6px 0; } to { opacity: 1; translate: 0 0; } }
 #bell-count:not([hidden]), #nav .count:not([hidden]) { animation: ping 2.4s ease-in-out infinite; }
 @keyframes ping { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+
+/* changing tab: the old page fades up and away before the new one arrives */
+#view { transition: none; }
+#view.leaving > * { opacity: 0; transform: translate3d(0, -10px, 0) scale(.992); filter: blur(5px); transition: opacity .18s ease, transform .18s ease, filter .18s ease; }
 
 /* ---------- 6. Buttons: press ripple (added by js/effects.js) ---------- */
 button.btn, .navpill, .icon-btn { position: relative; overflow: hidden; }
@@ -166,6 +204,9 @@ html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *
 
 /* ---------- Phone: the dialog slides up like a sheet ---------- */
 @media (max-width: 860px) {
+  #nav .glide { border-radius: 18px; background: var(--brand-l); border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent); box-shadow: none; }
+  #nav.has-glide button.active { border-color: transparent; }
+  #nav button:hover { --s: 1; }
   dialog.modal[open] { animation: sheet-in .45s var(--ease); }
   @keyframes sheet-in { from { transform: translateY(100%); } to { transform: none; } }
   #app:not([hidden]) #nav { animation: rise .8s var(--ease) both; translate: none; }
@@ -175,6 +216,8 @@ html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *
 /* ---------- Respect people who turn animation off, and keep printing clean ---------- */
 @media (prefers-reduced-motion: reduce) {
   body::after { animation: none; }
+  #nav .glide, .pillnav .glide-pill { transition: none; }
+  #view.leaving > * { transition: none; }
   #view.entering > *, #view.entering .stats > *, #view.entering tbody tr { animation: none !important; }
 }
 @media print { body::after { display: none; } .stat::before, .card::before { display: none; } }

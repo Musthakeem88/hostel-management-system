@@ -55,7 +55,7 @@ router.get("/", requireRole(...VIEW), async (req, res) => {
   }
   if (req.query.status && STATUSES.includes(String(req.query.status))) { params.push(String(req.query.status)); where.push(`p.status = $${params.length}`); }
   if (req.query.condition && CONDITIONS.includes(String(req.query.condition))) { params.push(String(req.query.condition)); where.push(`p.item_condition = $${params.length}`); }
-  if (req.query.q) { params.push(`%${clean(req.query.q)}%`); where.push(`(p.item_code ILIKE $${params.length} OR p.item_name ILIKE $${params.length})`); }
+  if (req.query.q) { params.push(`%${clean(req.query.q)}%`); where.push(`(p.item_code LIKE $${params.length} OR p.item_name LIKE $${params.length})`); }
 
   const result = await pool.query(
     `SELECT p.property_id, p.item_code, p.item_name, p.room_block, p.room_floor, p.room_number, p.item_condition, p.status,

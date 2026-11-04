@@ -28,7 +28,7 @@ router.get("/lookup", requireRole("warden", "administrator", "security"), async 
     `SELECT student_number, full_name, phone, room_block, room_floor, room_number
      FROM students
      WHERE (student_status IS NULL OR student_status = 'Active')
-       AND (student_number ILIKE $1 OR full_name ILIKE $1)
+       AND (student_number LIKE $1 OR full_name LIKE $1)
      ORDER BY full_name LIMIT 20`,
     [q]
   );

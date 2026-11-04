@@ -163,6 +163,15 @@ describe("students and allocation", () => {
     assert.equal((await t.call("GET", "/api/profile", undefined, k.ann)).data.student.phone, "014-555");
   });
 
+  test("a student can see their own room and its items, but not other rooms", async () => {
+    const r = (await t.call("GET", "/api/profile/room", undefined, k.ann)).data;
+    assert.equal(r.room.room_id, "A-01-01");
+    assert.equal(r.room.resident, true);
+    assert.equal(r.items.length, 19);
+    assert.ok(r.items.every((i) => i.item_code && i.item_condition));
+    assert.equal((await t.call("GET", "/api/profile/room", undefined, k.warden)).data.room, null);   // staff have no room
+  });
+
   test("students can add documents; a PDF is allowed for documents only", async () => {
     const pdf = Buffer.from("%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF").toString("base64");
     const asPhoto = await t.call("POST", "/api/files", { data: pdf, purpose: "photo" }, k.ann);

@@ -169,6 +169,12 @@ CREATE TABLE IF NOT EXISTS lost_found (
   status VARCHAR(20) NOT NULL DEFAULT 'Open', resolution_note TEXT, recorded_by INTEGER,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
 --#
+CREATE TABLE IF NOT EXISTS utility_readings (
+  reading_id SERIAL PRIMARY KEY, block VARCHAR(10) NOT NULL, utility VARCHAR(20) NOT NULL,
+  reading_date DATE NOT NULL, reading_value NUMERIC(12,2) NOT NULL, consumption NUMERIC(12,2),
+  unit VARCHAR(10), cost NUMERIC(10,2), note VARCHAR(200), recorded_by INTEGER,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
+--#
 CREATE INDEX IF NOT EXISTS idx_students_user ON students (user_id);
 --#
 CREATE INDEX IF NOT EXISTS idx_properties_room ON properties (room_block, room_floor, room_number);

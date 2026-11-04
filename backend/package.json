@@ -1,13 +1,14 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Hostel Management System \u2014 API and web server",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node --test --test-concurrency=1 \"tests/*.test.js\"",
-    "seed:demo": "node scripts/seed-demo.js"
+    "test": "node --test \"tests/*.test.js\"",
+    "seed:demo": "node scripts/seed-demo.js",
+    "migrate": "node -e \"require('./lib/migrate').migrate().then(n=>{console.log(n+' migration(s) applied');process.exit(0)}).catch(e=>{console.error(e.message);process.exit(1)})\""
   },
   "keywords": [],
   "author": "",
@@ -18,5 +19,8 @@
     "dotenv": "^18.0.9",
     "express": "^5.3.0",
     "pg": "^8.23.1"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

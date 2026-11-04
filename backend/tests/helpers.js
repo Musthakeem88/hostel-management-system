@@ -1,10 +1,5 @@
-/* Shared set-up for the automated tests: a PostgreSQL TEST database, the real app, and small helpers.
-   Tests wipe the "public" schema of the database named by TEST_DB_NAME (default hostel_management_test),
-   so that name must end in "_test". Create it once:  createdb hostel_management_test */
-process.env.DB_NAME = process.env.TEST_DB_NAME || "hostel_management_test";
-if (!/_test$/.test(process.env.DB_NAME)) {
-  throw new Error(`Refusing to run tests on "${process.env.DB_NAME}": the test database name must end in _test`);
-}
+/* Shared set-up for the automated tests: an in-memory database, the real app, and small helpers. */
+process.env.DB_DRIVER = "sqlite";
 process.env.LOG_LEVEL = "silent";
 process.env.SCHEDULER = "off";
 process.env.JWT_SECRET = "test-secret";
@@ -18,14 +13,7 @@ const { hashPassword } = require("../lib/auth");
 // 1x1 pixel PNG and JPEG used as test photos
 const PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
 
-async function resetDatabase() {
-  // Start every test file from an empty database; createApp() then runs the migrations and seed data
-  await pool.query("DROP SCHEMA public CASCADE");
-  await pool.query("CREATE SCHEMA public");
-}
-
 async function boot() {
-  await resetDatabase();
   const app = await createApp();
   const server = await new Promise((resolve) => { const s = app.listen(0, () => resolve(s)); });
   const base = `http://127.0.0.1:${server.address().port}`;
@@ -68,7 +56,6 @@ async function boot() {
 
   async function close() {
     await new Promise((resolve) => server.close(resolve));
-    await pool.end();
   }
 
   return { base, call, login, addUser, photo, tokens, pool, close, PNG };

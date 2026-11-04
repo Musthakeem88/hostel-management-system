@@ -32,7 +32,7 @@ router.get("/", requireRole("administrator"), async (req, res) => {
   }
   if (req.query.q) {
     params.push(`%${String(req.query.q).trim()}%`);
-    where.push(`(u.username ILIKE $${params.length} OR u.full_name ILIKE $${params.length} OR u.email ILIKE $${params.length})`);
+    where.push(`(u.username LIKE $${params.length} OR u.full_name LIKE $${params.length} OR u.email LIKE $${params.length})`);
   }
 
   const result = await pool.query(

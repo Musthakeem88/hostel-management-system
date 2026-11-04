@@ -19,6 +19,7 @@ describe("what each role can see (meta)", () => {
     const ann = (await t.call("GET", "/api/meta", undefined, k.ann)).data.modules;
     assert.ok(ann.visitors.scoped && ann.visitors.canCreate);
     assert.equal(ann.notices.canCreate, false);
+    assert.equal(ann.utilities, undefined);
     const warden = (await t.call("GET", "/api/meta", undefined, k.warden)).data.modules;
     assert.ok(warden.visitors.actions.some((a) => a.key === "approve"));
     assert.ok(!guard.visitors.actions.some((a) => a.key === "approve"));
@@ -158,7 +159,7 @@ describe("room transfer", () => {
   });
 });
 
-describe("complaints, notices, keys, incidents, lost and found", () => {
+describe("complaints, notices, keys, incidents, lost and found, utilities", () => {
   test("complaints: private to the student, answered by wardens", async () => {
     assert.equal((await m("POST", "complaints", { category: "Rant", subject: "x", message: "y" }, k.ann)).status, 400);
     const c = await m("POST", "complaints", { category: "Complaint", subject: "Hot water", message: "No hot water on floor 1" }, k.ann);
@@ -233,6 +234,20 @@ describe("complaints, notices, keys, incidents, lost and found", () => {
     assert.equal((await m("GET", "lostfound", undefined, k.guard)).data.length, 2);
     assert.equal((await m("POST", "lostfound", { resolution_note: "Collected by owner" }, k.guard, `/${c.data.row.item_id}/claim`)).data.row.status, "Claimed");
     assert.equal((await m("POST", "lostfound", {}, k.ann, `/${c.data.row.item_id}/close`)).status, 403);
+  });
+
+  test("utilities: consumption is worked out from the previous reading", async () => {
+    const first = await m("POST", "utilities", { block: "A", utility: "Electricity", reading_date: "2026-09-01", reading_value: 1000, cost: 0 }, k.admin);
+    assert.equal(first.status, 201);
+    assert.equal(first.data.row.consumption, null);
+    assert.equal(first.data.row.unit, "kWh");
+    const second = await m("POST", "utilities", { block: "A", utility: "Electricity", reading_date: "2026-10-01", reading_value: 1250.5, cost: 180 }, k.admin);
+    assert.equal(second.data.row.consumption, 250.5);
+    assert.equal((await m("POST", "utilities", { block: "A", utility: "Electricity", reading_date: "2026-11-01", reading_value: 100 }, k.admin)).status, 400);   // lower than before
+    assert.equal((await m("POST", "utilities", { block: "Q", utility: "Water", reading_date: "2026-10-01", reading_value: 5 }, k.admin)).status, 400);          // no such hostel
+    assert.equal((await m("POST", "utilities", { block: "A", utility: "Water", reading_date: "2026-10-01", reading_value: 12 }, k.warden)).status, 403);
+    assert.equal((await m("GET", "utilities", undefined, k.boss)).data.length, 2);
+    assert.equal((await m("GET", "utilities", undefined, k.guard)).status, 403);
   });
 });
 

@@ -64,7 +64,16 @@ async function show(key, { quiet = false } = {}) {
   $("#title").textContent = typeof page.title === "function" ? page.title() : PAGE_META[key].title;
   $("#subtitle").textContent = PAGE_SUB[key] || "";
 
-  if (!quiet) {                                   // play the entrance animation only when the page really changes
+  if (!quiet) {
+    // 1. the old page lets go: it fades and drifts up for a moment
+    const calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (view.children.length && !calm && !view.querySelector(".skeleton")) {
+      view.classList.add("leaving");
+      await new Promise((resolve) => setTimeout(resolve, 190));
+      view.classList.remove("leaving");
+      if (current !== key) return;                // the person already moved on to another page
+    }
+    // 2. the new page arrives (entrance animation plays only when the page really changes)
     const head = $(".page-head");
     head.classList.remove("swap"); void head.offsetWidth; head.classList.add("swap");
     view.classList.add("entering");
