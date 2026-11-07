@@ -2,6 +2,76 @@
 
 const roomStatus = (r) => (r.under_maintenance ? "Maintenance" : Number(r.occupied) >= Number(r.capacity) ? "Full" : Number(r.occupied) > 0 ? "Occupied" : "Available");
 
+/* ---------- the simple home screen: big, plain-word buttons for what each person does most ---------- */
+const HOME_TASKS = {
+  student: [
+    ["repairs", "Report a problem", "Something is broken in your room"],
+    ["myroom", "My room", "See your room and what is in it"],
+    ["fees", "Fees & deposit", "See what you owe and what you paid"],
+    ["fines", "My fines", "See fines and appeal if needed"],
+    ["leaves", "Ask for leave", "Going home or coming back late"],
+    ["visitors", "Register a visitor", "Tell us who is coming"],
+    ["notices", "Notices", "News from the hostel office"]
+  ],
+  warden: [
+    ["inspections", "Check a room", "Record a check-in or check-out"],
+    ["damage", "Report damage", "Something was broken or damaged"],
+    ["applications", "Room requests", "Students waiting for a room"],
+    ["visitors", "Approve visitors", "Say yes or no to visitors"],
+    ["leaves", "Approve leave", "Leave and late-return requests"],
+    ["complaints", "Answer messages", "Complaints and feedback"],
+    ["students", "Find a student", "Look up a student or their room"]
+  ],
+  administrator: [
+    ["damage", "Review damage", "Check reports before any fine"],
+    ["applications", "Room requests", "Approve or place students"],
+    ["fines", "Fines", "Decide appeals and track payments"],
+    ["fees", "Fees & payments", "Invoices and receipts"],
+    ["students", "Students", "Records and room moves"],
+    ["users", "Accounts", "Add staff or reset a password"],
+    ["reports", "Reports", "Print or download a report"]
+  ],
+  management: [
+    ["reports", "Reports", "Print or download a report"],
+    ["damage", "Damage", "What was damaged and what it cost"],
+    ["fees", "Fees & payments", "Money received and owed"],
+    ["fines", "Fines", "Fines and appeals"],
+    ["maintenance", "Maintenance", "Jobs and who is doing them"],
+    ["rooms", "Rooms", "Which rooms are free or full"]
+  ],
+  maintenance: [
+    ["repairs", "My repair jobs", "Jobs given to you"],
+    ["maintenance", "Maintenance jobs", "Planned work on rooms and buildings"],
+    ["notifications", "Alerts", "New jobs and messages"]
+  ],
+  security: [
+    ["visitors", "Visitors", "Let approved visitors in and out"],
+    ["leaves", "Students returning", "Who is expected back"],
+    ["incidents", "Report an incident", "Fire, safety, anything wrong"],
+    ["keys", "Room keys", "Who holds which key"],
+    ["lostfound", "Lost & found", "Log items found or lost"]
+  ]
+};
+
+/* counts: { page: number } puts a red number on a button (things waiting for this person) */
+function taskTiles(title, counts = {}) {
+  const role = state.user.role;
+  const tiles = (HOME_TASKS[role] || []).filter(([page]) => can(page));
+  if (!tiles.length) return "";
+  return `
+    <section class="home" aria-label="${esc(title)}">
+      <h3 class="home-title">${esc(title)}</h3>
+      <div class="tasks">
+        ${tiles.map(([page, label, help]) => `
+          <button type="button" class="task" data-goto="${page}">
+            <span class="task-ico">${icon(PAGE_META[page].icon)}</span>
+            <span class="task-text"><b>${esc(label)}</b><small>${esc(help)}</small></span>
+            ${counts[page] ? `<span class="task-count" aria-label="${counts[page]} waiting">${counts[page]}</span>` : ""}
+          </button>`).join("")}
+      </div>
+    </section>`;
+}
+
 function overdueJob(job) {
   return job.status !== "Completed" && job.expected_completion_date && job.expected_completion_date < todayISO();
 }
@@ -85,15 +155,19 @@ function staffDashboard() {
   const latestRepairs = repairs.slice(0, 5);
   const attention = attentionItems(s.waiting, s.damage);
 
-  return `
-    ${attention.length ? `
-      <div class="card">
-        <div class="card-head"><h3>Needs your attention</h3></div>
-        <div class="stats" style="margin:0">
-          ${attention.map(([page, count, label]) => statCard(label, count, { warn: true, page })).join("")}
-        </div>
-      </div>` : ""}
+  const counts = {};
+  attention.forEach(([page, count]) => { counts[page] = (counts[page] || 0) + count; });
+  const shown = (HOME_TASKS[state.user.role] || []).map(([page]) => page);
+  const waitingTotal = Object.entries(counts).filter(([page]) => shown.includes(page)).reduce((sum, [, count]) => sum + count, 0);
 
+  return `
+    ${taskTiles("What would you like to do?", counts)}
+    <p class="home-note ${waitingTotal ? "has" : ""}">${waitingTotal
+      ? `<b>${waitingTotal}</b> thing${waitingTotal === 1 ? "" : "s"} waiting for you. Look for the red numbers above.`
+      : "Nothing is waiting for you right now."}</p>
+
+    <details class="more-details">
+    <summary>See all numbers and charts</summary>
     <div class="stats">
       ${statCard("Total rooms", r.total, { page: can("rooms") ? "rooms" : null })}
       ${statCard("Registered students", s.students, { page: can("students") ? "students" : null })}
@@ -146,7 +220,8 @@ function staffDashboard() {
         { label: "Status", render: (x) => badge(x.repair_status) },
         { label: "Assigned to", render: (x) => esc(x.assigned_name || "—") }
       ], latestRepairs, { empty: "No repair requests yet." })}
-    </div>`;
+    </div>
+    </details>`;
 }
 
 /* ---------- student ---------- */
@@ -169,24 +244,13 @@ function studentDashboard() {
 
   return `
     ${banner}
-    <div class="stats">
-      ${statCard("My room", esc(s.room_id || "—"), { page: "myroom", hint: s.resident ? "Living here" : (s.status || "") })}
-      ${statCard("Open repair requests", s.repairs_open, { page: "repairs" })}
-      ${statCard("Fines to pay", money(s.fines_amount), { warn: s.fines_overdue > 0, page: "fines", hint: s.fines_due ? `${s.fines_due} fine${s.fines_due === 1 ? "" : "s"}${s.fines_overdue ? " (overdue)" : ""}` : "None" })}
-      ${statCard("Fees to pay", money(s.fees_owed), { warn: s.fees_owed > 0, page: "fees" })}
-      ${statCard("Deposit balance", money(s.deposit.balance), { page: "fees" })}
-    </div>
-
-    <div class="card">
-      <h3>What would you like to do?</h3>
-      <div class="row-actions">
-        <button class="btn" data-goto="repairs">Report a problem</button>
-        <button class="btn ghost" data-goto="myroom">See my room & items</button>
-        <button class="btn ghost" data-goto="fees">See my fees</button>
-        <button class="btn ghost" data-goto="leaves">Ask for leave</button>
-        <button class="btn ghost" data-goto="visitors">Register a visitor</button>
-      </div>
-    </div>
+    ${taskTiles("What would you like to do?", { fines: s.fines_due || 0, fees: s.fees_owed > 0 ? 1 : 0, repairs: 0 })}
+    <p class="home-note">${[
+      s.resident ? `Your room: <b>${esc(s.room_id || "—")}</b>` : "",
+      s.repairs_open ? `<b>${s.repairs_open}</b> repair request${s.repairs_open === 1 ? "" : "s"} open` : "",
+      s.fines_amount > 0 ? `Fines to pay: <b>${money(s.fines_amount)}</b>` : "",
+      s.fees_owed > 0 ? `Fees to pay: <b>${money(s.fees_owed)}</b>` : ""
+    ].filter(Boolean).join(" &nbsp;·&nbsp; ") || "Everything is up to date."}</p>
 
     <div class="card">
       <div class="card-head"><h3>Latest notices</h3><button class="btn ghost small" data-goto="notices">All notices</button></div>
@@ -201,6 +265,7 @@ function studentDashboard() {
 function maintenanceDashboard() {
   const s = state.d.dashboard.stats;
   return `
+    ${taskTiles("What would you like to do?", { repairs: s.repairs_open || 0, maintenance: s.maintenance_open || 0 })}
     <div class="stats">
       ${statCard("My open repair jobs", s.repairs_open, { page: "repairs" })}
       ${statCard("Urgent", s.repairs_urgent, { warn: s.repairs_urgent > 0 })}
@@ -225,6 +290,7 @@ function maintenanceDashboard() {
 function securityDashboard() {
   const s = state.d.dashboard.stats;
   return `
+    ${taskTiles("What would you like to do?", { visitors: s.visitors_approved || 0, leaves: s.returns_expected || 0, incidents: s.incidents_open || 0 })}
     <div class="stats">
       ${statCard("Visitors today", s.visitors_today, { page: "visitors" })}
       ${statCard("Approved, waiting at the gate", s.visitors_approved, { page: "visitors" })}
@@ -232,14 +298,5 @@ function securityDashboard() {
       ${statCard("Students expected back", s.returns_expected, { page: "leaves", warn: s.returns_expected > 0 })}
       ${statCard("Late arrivals today", s.late_today, { page: "leaves" })}
       ${statCard("Open incidents", s.incidents_open, { page: "incidents", warn: s.incidents_open > 0 })}
-    </div>
-    <div class="card">
-      <h3>Gate screen</h3>
-      <div class="row-actions">
-        <button class="btn" data-goto="visitors">Visitor log</button>
-        <button class="btn ghost" data-goto="leaves">Returns & late arrivals</button>
-        <button class="btn ghost" data-goto="incidents">Report an incident</button>
-        <button class="btn ghost" data-goto="keys">Room keys</button>
-      </div>
     </div>`;
 }

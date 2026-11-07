@@ -163,7 +163,7 @@ form > .btn { margin-top: 14px; }
 /* ---------- Filters (room status chips): a glass segmented control ---------- */
 .filters {
   display: inline-flex; gap: 2px; margin-bottom: 14px; flex-wrap: wrap; padding: 4px;
-  background: var(--sheen), var(--surface); border: 1px solid var(--edge); border-radius: 999px;
+  background: var(--sheen), var(--surface); border: 1px solid var(--edge); border-radius: 24px;
   -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); box-shadow: var(--shadow-sm);
 }
 .filters button {
@@ -171,8 +171,9 @@ form > .btn { margin-top: 14px; }
   border: 0; border-radius: 999px; background: none; color: var(--muted);
   transition: background .15s, color .15s;
 }
-.filters button:hover { color: var(--text); }
-.filters button.active { background: #ffffff; color: #101c2a; font-weight: 600; box-shadow: 0 3px 12px rgba(0, 0, 0, .22); }
+.filters button { white-space: nowrap; flex: 0 0 auto; color: var(--text); opacity: .78; }
+.filters button:hover { opacity: 1; }
+.filters button.active { opacity: 1; background: #ffffff; color: #101c2a; font-weight: 600; box-shadow: 0 3px 12px rgba(0, 0, 0, .22); }
 
 /* ---------- Row actions (status select + button) ---------- */
 .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }

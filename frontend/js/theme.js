@@ -58,3 +58,10 @@
     });
   }
 })();
+
+/* menu width (desktop): expanded shows page names, collapsed shows icons only. Applied before first paint. */
+(function () {
+  var value = "collapsed";
+  try { if (localStorage.getItem("hostel-nav") === "expanded") value = "expanded"; } catch (e) { /* storage blocked */ }
+  document.documentElement.setAttribute("data-nav", value);
+})();

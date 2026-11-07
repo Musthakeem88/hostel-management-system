@@ -234,10 +234,6 @@ async function main() {
   await call("POST", "/api/m/lostfound", { kind: "Lost", item_name: "Blue water bottle", description: "Metal bottle with a dent", location: "Study room" }, tokens["20260002"]);
   await call("POST", "/api/m/lostfound", { kind: "Found", item_name: "Keys on a red lanyard", location: "Main gate" }, guard);
 
-  for (const [block, utility, date, value, cost] of [["A", "Electricity", addDays(today(), -60), 41200, 0], ["A", "Electricity", addDays(today(), -30), 42650, 612.5], ["B", "Electricity", addDays(today(), -30), 18800, 0], ["A", "Water", addDays(today(), -30), 930, 0], ["A", "Water", today(), 985, 96]]) {
-    await call("POST", "/api/m/utilities", { block, utility, reading_date: date, reading_value: value, cost }, admin);
-  }
-
   /* ----- scheduled jobs ----- */
   await runDailyChecks();
   await runMonthlyReport(previousMonth(today()), { force: true });

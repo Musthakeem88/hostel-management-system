@@ -1,8 +1,8 @@
 /* js/pages/modules.js  —  one generic page for visitors, leave, transfers, complaints, notices,
-   keys, incidents, lost & found and utilities. Each page is drawn from the definition the server sends
+   keys, incidents, and lost & found. Each page is drawn from the definition the server sends
    (GET /api/meta), so the buttons always match what the person is allowed to do. */
 
-const MODULE_KEYS = ["visitors", "leaves", "transfers", "complaints", "notices", "keys", "incidents", "lostfound", "utilities"];
+const MODULE_KEYS = ["visitors", "leaves", "transfers", "complaints", "notices", "keys", "incidents", "lostfound"];
 
 const moduleSpec = (key) => (state.meta && state.meta.modules[key]) || null;
 

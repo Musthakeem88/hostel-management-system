@@ -110,10 +110,16 @@ async function createApp({ startup = true } = {}) {
 }
 
 async function start() {
+  if (config.isProduction && (config.jwtSecretIsGenerated || config.jwtSecretIsWeak)) {
+    throw new Error("Set JWT_SECRET in backend/.env to a random string of at least 32 characters before running in production.");
+  }
+
   const app = await createApp();
 
   if (config.jwtSecretIsGenerated) {
     logger.warn("JWT_SECRET is not set: everyone will be signed out whenever the server restarts. Add JWT_SECRET to backend/.env.");
+  } else if (config.jwtSecretIsWeak) {
+    logger.warn("JWT_SECRET is shorter than 32 characters. Use a longer random secret (see backend/.env.example).");
   }
 
   const server = app.listen(config.port, () => {

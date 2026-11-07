@@ -10,7 +10,11 @@ let pollTimer = null;
 function buildNav() {
   const allowed = state.user.pages;
   const primary = PRIMARY[state.user.role] || [];
-  let html = "";
+  const expanded = document.documentElement.dataset.nav === "expanded";
+  let html = `<button type="button" class="nav-toggle" data-action="nav-toggle" aria-expanded="${expanded}" aria-label="${expanded ? "Collapse menu" : "Expand menu"}" data-tip="${expanded ? "Collapse menu" : "Expand menu"}">
+    <svg class="ic-expand" viewBox="0 0 24 24" aria-hidden="true">${ICONS.chevronsRight}</svg><svg class="ic-collapse" viewBox="0 0 24 24" aria-hidden="true">${ICONS.chevronsLeft}</svg>
+    <span class="label"><span class="long">Collapse menu</span></span>
+  </button>`;
 
   GROUPS.forEach((group) => {
     const keys = Object.keys(PAGE_META).filter((k) => PAGE_META[k].group === group && allowed.includes(k));
@@ -27,7 +31,7 @@ function buildNav() {
     });
   });
 
-  html += `<button type="button" id="more-btn" data-action="more">${icon("dashboard")}<span class="label"><span class="short">More</span></span></button>`;
+  html += `<button type="button" id="more-btn" data-action="more" aria-label="More pages">${icon("more")}<span class="label"><span class="short">More</span></span></button>`;
   $("#nav").innerHTML = html;
 
   // the pill menu at the top centre: the person's main pages
@@ -38,7 +42,49 @@ function buildNav() {
 
 function setActiveNav() {
   $$("#nav button[data-view], #topnav button[data-view]").forEach((b) => b.classList.toggle("active", b.dataset.view === current));
+
+  // on a phone only four pages have a tab: when you are on any other page, "More" is the lit tab
+  const more = $("#more-btn");
+  if (more) {
+    const primary = PRIMARY[state.user && state.user.role] || [];
+    more.classList.toggle("active", Boolean(current) && !primary.includes(current));
+  }
+  keepActiveNavVisible();
 }
+
+/* the page you opened must stay in view inside the menu, even if the menu itself was scrolled */
+function keepActiveNavVisible(smooth = true) {
+  const nav = $("#nav");
+  const active = nav && [...nav.querySelectorAll("button.active")].find((b) => b.offsetParent !== null);
+  if (!active || nav.scrollHeight <= nav.clientHeight + 1) return;
+
+  const toggle = nav.querySelector(".nav-toggle");
+  const top = active.offsetTop - (toggle ? toggle.offsetHeight + 16 : 12);   // leave room for the sticky toggle
+  const bottom = active.offsetTop + active.offsetHeight + 12;
+  const behavior = smooth && !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) ? "smooth" : "auto";
+
+  if (top < nav.scrollTop) nav.scrollTo({ top: Math.max(0, top), behavior });
+  else if (bottom > nav.scrollTop + nav.clientHeight) nav.scrollTo({ top: bottom - nav.clientHeight, behavior });
+}
+
+/* desktop: expand the menu to show page names, or shrink it back to icons (remembered) */
+actions["nav-toggle"] = () => {
+  const root = document.documentElement;
+  const expanded = root.dataset.nav !== "expanded";
+  root.dataset.nav = expanded ? "expanded" : "collapsed";
+  try { localStorage.setItem("hostel-nav", root.dataset.nav); } catch { /* storage blocked */ }
+
+  const button = $(".nav-toggle");
+  if (button) {
+    const label = expanded ? "Collapse menu" : "Expand menu";
+    button.setAttribute("aria-expanded", String(expanded));
+    button.setAttribute("aria-label", label);
+    button.dataset.tip = label;
+  }
+  $("#dock-tip").hidden = true;
+  $$("#nav > button").forEach((b) => { b.style.removeProperty("--s"); b.style.removeProperty("--z"); });   // forget the icon swell
+  setTimeout(() => keepActiveNavVisible(false), 320);
+};
 
 actions.more = () => {
   const allowed = state.user.pages;
@@ -104,6 +150,15 @@ function paint() {
   view.innerHTML = page.render();
   if (page.ready) page.ready();
   window.scrollTo(0, y);
+  centerActiveChips();
+}
+
+/* filter chips scroll sideways on a phone: keep the chosen one in the middle of the strip */
+function centerActiveChips() {
+  $$(".filters, .tabs").forEach((strip) => {
+    const on = strip.querySelector("button.active");
+    if (on && strip.scrollWidth > strip.clientWidth + 1) strip.scrollLeft = on.offsetLeft - (strip.clientWidth - on.offsetWidth) / 2;
+  });
 }
 
 const rerender = () => paint();
@@ -295,6 +350,7 @@ document.addEventListener("keydown", (event) => {
 
   function show(button) {
     if (!button || !button.dataset.tip || getComputedStyle(nav).position !== "fixed" || window.innerWidth <= 860) return;
+    if (document.documentElement.dataset.nav === "expanded") return;   // page names are already visible
     const r = button.getBoundingClientRect();
     tip.textContent = button.dataset.tip;
     tip.hidden = false;

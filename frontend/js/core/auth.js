@@ -10,6 +10,7 @@ function showLogin(message) {
 }
 
 function switchAuthTab(tab) {
+  $$(".pw-toggle[aria-pressed='true']").forEach((b) => b.click());
   $$("[data-auth-tab]").forEach((b) => b.classList.toggle("active", b.dataset.authTab === tab));
   $("#signin-form").hidden = tab !== "signin";
   $("#signup-form").hidden = tab !== "signup";
@@ -70,6 +71,48 @@ async function logout() {
   location.hash = "";
   showLogin();
 }
+
+/* ---------- show / hide password ---------- */
+
+/* wraps a password input in a box with an eye button (used on sign in, sign up and every password pop-up) */
+function addPasswordToggle(input) {
+  if (!input || input.dataset.pw || input.type !== "password") return;
+  input.dataset.pw = "1";
+
+  const wrap = document.createElement("span");
+  wrap.className = "pw";
+  input.parentNode.insertBefore(wrap, input);
+  wrap.appendChild(input);
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "pw-toggle";
+  button.setAttribute("aria-label", "Show password");
+  button.setAttribute("aria-pressed", "false");
+  button.title = "Show password";
+  button.innerHTML = `<svg class="ic-show" viewBox="0 0 24 24" aria-hidden="true">${ICONS.eye}</svg><svg class="ic-hide" viewBox="0 0 24 24" aria-hidden="true">${ICONS.eyeOff}</svg>`;
+  wrap.appendChild(button);
+
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    button.setAttribute("aria-pressed", String(show));
+    button.setAttribute("aria-label", show ? "Hide password" : "Show password");
+    button.title = show ? "Hide password" : "Show password";
+    input.focus({ preventScroll: true });
+  });
+}
+
+const addPasswordToggles = (root = document) => root.querySelectorAll('input[type="password"]').forEach(addPasswordToggle);
+addPasswordToggles();
+// pop-ups (change password, new user...) are drawn later, so watch for new password fields
+new MutationObserver(() => addPasswordToggles()).observe(document.body, { childList: true, subtree: true });
+
+/* the password goes back to hidden whenever the form is cleared or the person switches tab */
+document.addEventListener("reset", (event) => {
+  event.target.querySelectorAll && event.target.querySelectorAll(".pw-toggle[aria-pressed='true']").forEach((b) => b.click());
+}, true);
 
 /* ---------- passwords ---------- */
 

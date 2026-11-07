@@ -55,7 +55,6 @@ const PAGE_META = {
   keys:         { title: "Room keys", short: "Keys", group: "Community", icon: "keys" },
   incidents:    { title: "Incidents", short: "Incidents", group: "Community", icon: "incidents" },
   lostfound:    { title: "Lost & found", short: "Lost", group: "Community", icon: "lostfound" },
-  utilities:    { title: "Electricity & water", short: "Utilities", group: "Management", icon: "utilities" },
   reports:      { title: "Reports", short: "Reports", group: "Management", icon: "reports" },
   users:        { title: "Users", short: "Users", group: "Management", icon: "users" },
   audit:        { title: "Activity log", short: "Log", group: "Management", icon: "audit" },
@@ -67,7 +66,7 @@ const PAGE_META = {
 // the four tabs shown at the bottom of a phone (the rest are under "More")
 /* the small grey sentence under each page title */
 const PAGE_SUB = {
-  dashboard: "Here is what is happening across the hostel today.",
+  dashboard: "Tap what you want to do.",
   myroom: "Your room, bed and the items in it.",
   applications: "Room applications and the waiting list.",
   rooms: "Every room, its beds and who lives there.",
@@ -87,7 +86,6 @@ const PAGE_SUB = {
   keys: "Who holds which room key.",
   incidents: "Incident reports and follow-up.",
   lostfound: "Items lost and found in the hostel.",
-  utilities: "Electricity and water meter readings.",
   reports: "Reports to preview, print and download.",
   users: "Accounts, roles and passwords.",
   audit: "Who did what, and when.",
@@ -126,13 +124,17 @@ const ICONS = {
   keys: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/>',
   incidents: '<path d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z"/>',
   lostfound: '<circle cx="11" cy="11" r="6"/><path d="m20 20-4.2-4.2"/>',
-  utilities: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
   reports: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
   users: '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.6 3-6 7-6s7 2.4 7 6"/><path d="M17 3.5l1.2 1 1.8-.3M20 7l-.5 1.7"/>',
   audit: '<path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h3"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
   bell: '<path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
   profile: '<circle cx="12" cy="8" r="3.5"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/>',
+  more: '<circle cx="5.5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18.5" cy="12" r="1.7"/>',
+  chevronsRight: '<path d="m6 7 5 5-5 5"/><path d="m13 7 5 5-5 5"/>',
+  chevronsLeft: '<path d="m18 7-5 5 5 5"/><path d="m11 7-5 5 5 5"/>',
+  eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  eyeOff: '<path d="M3 3l18 18"/><path d="M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.4 6.5C3.8 8.3 2 12 2 12s3.6 7 10 7c1.6 0 3-.4 4.3-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
   camera: '<path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>'
 };
 

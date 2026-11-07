@@ -1,7 +1,8 @@
-/* Passwords (scrypt), signed login tokens (HMAC-SHA256) and role checks. No external packages. */
+/* Passwords (scrypt), JWT login tokens (HS256) and role checks. No external packages. */
 const crypto = require("crypto");
 const pool = require("../db");
 const config = require("./config");
+const jwt = require("./jwt");
 const { bad, HttpError, forbidden } = require("./http");
 
 /* ---------- passwords ---------- */
@@ -31,36 +32,39 @@ function checkPasswordStrength(password) {
   if (!/[A-Za-z]/.test(p) || !/\d/.test(p)) throw bad("Password must contain letters and numbers.");
 }
 
-/* ---------- tokens ---------- */
+/* ---------- tokens (standard JWT) ---------- */
 
-const b64 = (buffer) => Buffer.from(buffer).toString("base64url");
+const jwtOptions = () => ({ secret: config.jwtSecret, issuer: config.jwtIssuer, audience: config.jwtAudience });
 
-function sign(text) {
-  return b64(crypto.createHmac("sha256", config.jwtSecret).update(text).digest());
+/* A short fingerprint of the user's current password. It is stored inside the token, so changing
+   or resetting a password instantly makes every older token invalid. */
+function passwordStamp(passwordHash) {
+  return crypto.createHmac("sha256", config.jwtSecret).update(`pwd:${passwordHash}`).digest("base64url").slice(0, 16);
 }
 
-function signToken(payload, hours = config.tokenHours) {
-  const body = b64(JSON.stringify({ ...payload, exp: Math.floor(Date.now() / 1000) + hours * 3600 }));
-  return `${body}.${sign(body)}`;
+/* Creates the JWT sent to the browser after sign-in. `user` is a row from the users table. */
+function issueToken(user) {
+  return jwt.sign(
+    { role: user.role, pwd: passwordStamp(user.password_hash) },
+    { ...jwtOptions(), subject: user.user_id, expiresInSeconds: Math.round(config.tokenHours * 3600) }
+  );
 }
 
 function verifyToken(token) {
-  const [body, signature] = String(token || "").split(".");
-  if (!body || !signature) return null;
-
-  const expected = sign(body);
-  const a = Buffer.from(signature);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
-
-  try {
-    const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
-    if (!payload.exp || payload.exp < Date.now() / 1000) return null;
-    return payload;
-  } catch {
-    return null;
-  }
+  return jwt.verify(token, jwtOptions());
 }
+
+/* Tokens that were signed out before they expired (kept in memory until their expiry time). */
+const revoked = new Map();
+
+function revokeToken(payload) {
+  if (payload && payload.jti) revoked.set(payload.jti, payload.exp);
+}
+
+setInterval(() => {
+  const now = Date.now() / 1000;
+  for (const [id, exp] of revoked) if (exp < now) revoked.delete(id);
+}, 10 * 60 * 1000).unref();
 
 /* ---------- middleware ---------- */
 
@@ -68,12 +72,12 @@ async function authenticate(req, res, next) {
   const header = String(req.headers.authorization || "");
   const payload = header.startsWith("Bearer ") ? verifyToken(header.slice(7)) : null;
 
-  if (!payload) return next(new HttpError(401, "Please sign in."));
+  if (!payload || revoked.has(payload.jti)) return next(new HttpError(401, "Please sign in."));
 
   const result = await pool.query(
-    `SELECT user_id, username, full_name, role, status, student_number, must_change_password
+    `SELECT user_id, username, full_name, role, status, student_number, must_change_password, password_hash
      FROM users WHERE user_id = $1`,
-    [payload.uid]
+    [Number(payload.sub)]
   );
 
   const user = result.rows[0];
@@ -82,6 +86,12 @@ async function authenticate(req, res, next) {
     return next(new HttpError(401, "This account is not active. Please sign in again."));
   }
 
+  // password changed (or role changed) since this token was issued -> sign in again
+  if (payload.pwd !== passwordStamp(user.password_hash) || payload.role !== user.role) {
+    return next(new HttpError(401, "Your session has expired. Please sign in again."));
+  }
+
+  req.tokenClaims = payload;
   req.user = {
     id: user.user_id,
     username: user.username,
@@ -128,6 +138,6 @@ function throttleReset(key) {
 }
 
 module.exports = {
-  hashPassword, verifyPassword, checkPasswordStrength, signToken, verifyToken,
+  hashPassword, verifyPassword, checkPasswordStrength, issueToken, verifyToken, revokeToken,
   authenticate, requireRole, throttleCheck, throttleFail, throttleReset
 };

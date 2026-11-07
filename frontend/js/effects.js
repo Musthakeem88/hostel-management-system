@@ -91,7 +91,10 @@
     if (!container) return;
     let placed = false;
 
-    function place() {
+    // on a phone, pages without a tab are display:none, so pick the lit tab that is really on screen
+    const visibleActive = () => [...container.querySelectorAll(itemSelector + ".active")].find((b) => b.offsetParent !== null);
+
+    function place(instant) {
       let el = container.querySelector(":scope > ." + className);
       if (!el) {
         el = document.createElement("span");
@@ -101,26 +104,41 @@
         container.classList.add("has-glide");
         placed = false;
       }
-      const active = container.querySelector(itemSelector + ".active");
-      if (!active || active.offsetParent === null) { el.style.opacity = "0"; return; }
-      if (!placed) el.style.transition = "none";            // first time: appear in place, do not fly in from the corner
+      const active = visibleActive();
+      if (!active) { el.style.opacity = "0"; return; }
+
+      // exact (fractional) size, so the highlight is never a pixel off from its tab
+      const box = getComputedStyle(active);
+      const width = parseFloat(box.width) || active.offsetWidth;
+      const height = parseFloat(box.height) || active.offsetHeight;
+      const x = active.offsetLeft + (active.offsetWidth - width) / 2;
+      const y = active.offsetTop + (active.offsetHeight - height) / 2;
+
+      const still = !placed || instant === true;           // first time, or the layout itself changed: jump, do not fly
+      if (still) el.style.transition = "none";
       el.style.opacity = "1";
-      el.style.width = active.offsetWidth + "px";
-      el.style.height = active.offsetHeight + "px";
-      el.style.transform = `translate(${active.offsetLeft}px, ${active.offsetTop}px)`;
-      if (!placed) { void el.offsetWidth; el.style.transition = ""; placed = true; }
+      el.style.width = width + "px";
+      el.style.height = height + "px";
+      el.style.transform = `translate(${x}px, ${y}px)`;
+      if (still) { void el.offsetWidth; el.style.transition = ""; placed = true; }
     }
 
-    new MutationObserver(place).observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
-    window.addEventListener("resize", place);
-    place();
+    new MutationObserver(() => place(false)).observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+
+    // whenever the bar changes size (rotating the phone, the browser bar sliding away, the menu expanding), re-fit at once
+    if ("ResizeObserver" in window) new ResizeObserver(() => place(true)).observe(container);
+    window.addEventListener("resize", () => place(true));
+    if (window.visualViewport) window.visualViewport.addEventListener("resize", () => place(true));
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => place(true));
+    window.addEventListener("load", () => place(true));
+    place(true);
   }
   glide(document.getElementById("nav"), "button", "glide");
   glide(document.getElementById("topnav"), ".navpill", "glide-pill");
 
   /* ---------- 6. the dock reacts to the cursor like a Mac dock: icons near the pointer swell ---------- */
   const dock = document.getElementById("nav");
-  const wide = () => window.innerWidth > 860 && dock && getComputedStyle(dock).position === "fixed";
+  const wide = () => window.innerWidth > 860 && dock && getComputedStyle(dock).position === "fixed" && document.documentElement.dataset.nav !== "expanded";
 
   function dockReset() {
     dock.querySelectorAll(":scope > button").forEach((b) => { b.style.removeProperty("--s"); b.style.removeProperty("--z"); });

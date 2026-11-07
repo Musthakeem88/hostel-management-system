@@ -349,39 +349,6 @@ const modules = {
         inputs: [{ name: "resolution_note", label: "Who collected it?", type: "text", max: 200 }] },
       { key: "close", label: "Close", roles: ["warden", "administrator", "security"], from: ["Open"], set: { status: "Closed" } }
     ]
-  },
-
-  /* ---------------------------------------------------------------- utilities */
-  utilities: {
-    title: "Electricity & water", icon: "utilities", table: "utility_readings", pk: "reading_id", order: "reading_date DESC, reading_id DESC",
-    listRoles: ["administrator", "management"], createRoles: ["administrator"],
-    summary: "Meter readings per hostel block. Consumption is worked out from the previous reading.",
-    columns: [
-      { name: "reading_id", label: "ID", hidden: true }, { name: "reading_date", label: "Date", type: "date" },
-      { name: "block", label: "Hostel" }, { name: "utility", label: "Utility" },
-      { name: "reading_value", label: "Reading", type: "number" }, { name: "consumption", label: "Used", type: "number" },
-      { name: "unit", label: "Unit" }, { name: "cost", label: "Cost (RM)", type: "number" }, { name: "note", label: "Note" }
-    ],
-    fields: [
-      { name: "block", label: "Hostel", type: "block", required: true },
-      { name: "utility", label: "Utility", type: "select", required: true, options: ["Electricity", "Water"] },
-      { name: "reading_date", label: "Reading date", type: "date", required: true, default: "today" },
-      { name: "reading_value", label: "Meter reading", type: "number", required: true },
-      { name: "cost", label: "Bill amount (RM)", type: "number" },
-      { name: "note", label: "Note", type: "text", max: 200 }
-    ],
-    async beforeCreate({ client, user, values }) {
-      const previous = (await client.query(
-        "SELECT reading_value FROM utility_readings WHERE block = $1 AND utility = $2 AND reading_date <= $3 ORDER BY reading_date DESC, reading_id DESC LIMIT 1",
-        [values.block, values.utility, values.reading_date])).rows[0];
-      if (previous && Number(values.reading_value) < Number(previous.reading_value)) {
-        throw bad(`The reading is lower than the previous reading (${previous.reading_value}).`);
-      }
-      values.unit = values.utility === "Water" ? "m3" : "kWh";
-      values.consumption = previous ? Math.round((Number(values.reading_value) - Number(previous.reading_value)) * 100) / 100 : null;
-      values.recorded_by = user.id;
-    },
-    actions: []
   }
 };
 

@@ -25,24 +25,29 @@
   #nav {
     left: var(--frame); right: var(--frame); top: auto; transform: none;
     bottom: max(10px, env(safe-area-inset-bottom)); width: auto; max-height: none; overflow: visible;
-    flex-direction: row; justify-content: space-around; gap: 2px;
+    flex-direction: row; align-items: stretch; justify-content: space-around; gap: 2px;
     height: var(--nav-h); padding: 6px;
     background: var(--sheen), var(--bar-bg); border-radius: 26px; box-shadow: var(--shadow-up);
   }
+  /* each tab fills the bar's full inner height, so the lit shape is a clean pill that sits
+     concentric with the bar (bar radius 26px - padding 6px = 20px) */
   #nav button {
     flex: 1 1 0; min-width: 0; width: auto; height: auto; place-items: initial;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 3px; padding: 6px 2px; text-align: center; border-radius: 18px;
-    font-size: .68rem; line-height: 1.1; color: var(--muted);
+    gap: 3px; padding: 4px 2px; text-align: center; border-radius: 20px;
+    font-size: .68rem; font-weight: 600; line-height: 1.1; color: var(--muted);
+    transform: none; -webkit-tap-highlight-color: transparent;
   }
   #nav button svg { width: 22px; height: 22px; flex: 0 0 auto; margin: 0 auto; display: block; }
-  #nav button .label { display: block; width: 100%; text-align: center; }
+  #nav button .label { display: block; width: 100%; max-width: 100%; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #nav button .short { display: block; width: 100%; text-align: center; }
-  #nav button:hover { background: none; color: var(--brand); }
-  #nav button.active { background: var(--brand-l); color: var(--brand); box-shadow: none; border-color: color-mix(in srgb, var(--brand) 30%, transparent); }
+  #nav button:hover { background: none; color: var(--muted); }
+  @media (hover: hover) { #nav button:not(.active):hover { color: var(--brand); } }   /* touch screens keep :hover after a tap */
+  #nav button::before { display: none; }                  /* no cursor glow: it washed out the lit tab on touch screens */
+  #nav button.active, #nav button.active:hover { background: var(--brand-l); color: var(--brand); box-shadow: none; border-color: transparent; }
   #nav .long { display: none; }
   #nav .short { display: inline; }
-  #nav .nav-group, #nav .count { display: none; }
+  #nav .nav-group, #nav .count, #nav .nav-toggle { display: none; }
   #nav button:not(.primary):not(#more-btn) { display: none; }
   #nav button.primary { order: var(--o, 0); }
   #nav #more-btn { display: flex; order: 99; }
@@ -128,6 +133,19 @@
   .stats { grid-template-columns: minmax(0, 1fr); }
   #nav button { font-size: .58rem; padding-left: 0; padding-right: 0; }
   #nav button span { overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+}
+
+/* ---------- Phones: filter chips are ONE swipeable row (never a wrapped, clipped blob) ---------- */
+@media (max-width: 860px) {
+  .filters, .tabs {
+    display: flex; flex-wrap: nowrap; width: 100%; max-width: 100%; box-sizing: border-box;
+    overflow-x: auto; overflow-y: hidden; border-radius: 999px; gap: 4px; padding: 5px;
+    scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+            mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+  }
+  .filters::-webkit-scrollbar, .tabs::-webkit-scrollbar { display: none; }
+  .filters button, .tabs button { flex: 0 0 auto; scroll-snap-align: center; min-height: 40px; padding: 8px 16px; white-space: nowrap; }
 }
 
 /* ---------- Touch devices: bigger tap targets, no sticky hover ---------- */

@@ -9,10 +9,14 @@ module.exports = {
   port: Number(env.PORT) || 3000,
   isProduction: env.NODE_ENV === "production",
 
-  // Secret used to sign login tokens. Set JWT_SECRET in .env so logins survive a restart.
-  jwtSecret: env.JWT_SECRET || crypto.randomBytes(32).toString("hex"),
+  // Login tokens are standard JWTs (HS256). JWT_SECRET must be a long random string (32+ characters).
+  // Make one with:  node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+  jwtSecret: env.JWT_SECRET || crypto.randomBytes(48).toString("hex"),
   jwtSecretIsGenerated: !env.JWT_SECRET,
-  tokenHours: Number(env.TOKEN_HOURS) || 12,
+  jwtSecretIsWeak: Boolean(env.JWT_SECRET) && env.JWT_SECRET.length < 32,
+  jwtIssuer: env.JWT_ISSUER || "hostel-management-system",
+  jwtAudience: env.JWT_AUDIENCE || "hostel-management-web",
+  tokenHours: Number(env.TOKEN_HOURS) || 8,
 
   // First administrator, created automatically when the users table is empty.
   adminUsername: env.ADMIN_USERNAME || "admin",

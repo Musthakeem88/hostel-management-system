@@ -20,13 +20,13 @@ const PAGE_ACCESS = {
            "keys", "incidents", "lostfound", "reports", "notifications", "profile"],
   administrator: ["dashboard", "rooms", "students", "items", "inspections", "damage", "fines", "repairs",
                   "maintenance", "applications", "fees", "reports", "visitors", "leaves", "transfers",
-                  "complaints", "notices", "keys", "incidents", "lostfound", "utilities", "users",
+                  "complaints", "notices", "keys", "incidents", "lostfound", "users",
                   "audit", "settings", "notifications", "profile"],
   maintenance: ["dashboard", "repairs", "maintenance", "notifications", "profile"],
   security: ["dashboard", "visitors", "leaves", "incidents", "keys", "lostfound", "notices",
              "notifications", "profile"],
   management: ["dashboard", "rooms", "damage", "fines", "repairs", "maintenance", "fees", "reports",
-               "utilities", "notices", "notifications", "profile"]
+               "notices", "notifications", "profile"]
 };
 
 // Roles that may look at campus-wide data (everything except student scope)

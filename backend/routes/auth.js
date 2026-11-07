@@ -56,7 +56,7 @@ publicRouter.post("/login", async (req, res) => {
   await pool.query("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE user_id = $1", [user.user_id]);
   await audit({ user: { id: user.user_id, username: user.username, role: user.role }, ip: req.ip }, "login", "user", user.user_id);
 
-  res.json({ token: auth.signToken({ uid: user.user_id, role: user.role }), user: describe(user) });
+  res.json({ token: auth.issueToken(user), user: describe(user) });
 });
 
 /* POST /api/auth/register — a student creates their own account */
@@ -95,7 +95,7 @@ publicRouter.post("/register", async (req, res) => {
   await pool.query("UPDATE students SET user_id = $1 WHERE student_number = $2", [user.user_id, studentNumber]);
   await audit({ user: { id: user.user_id, username: user.username, role: "student" }, ip: req.ip }, "register", "user", user.user_id);
 
-  res.status(201).json({ token: auth.signToken({ uid: user.user_id, role: "student" }), user: describe(user) });
+  res.status(201).json({ token: auth.issueToken(user), user: describe(user) });
 });
 
 /* GET /api/auth/me */
@@ -124,8 +124,9 @@ privateRouter.post("/change-password", async (req, res) => {
   res.json({ message: "Password changed successfully." });
 });
 
-/* POST /api/auth/logout — the browser discards the token; this records it */
+/* POST /api/auth/logout — revokes the token and records it */
 privateRouter.post("/logout", async (req, res) => {
+  auth.revokeToken(req.tokenClaims);   // this exact token stops working straight away
   await audit(req, "logout", "user", req.user.id);
   res.json({ message: "Signed out." });
 });

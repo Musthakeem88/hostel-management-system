@@ -76,6 +76,44 @@ img, svg, video { max-width: 100%; height: auto; }
 #nav .count { position: absolute; top: 3px; right: 1px; margin: 0; }
 #nav .short { display: none; }
 
+/* the expand / collapse button at the top of the menu (desktop) */
+#nav .nav-toggle {
+  position: sticky; top: 0; z-index: 30; margin-bottom: 4px;
+  background: var(--pop); border-color: var(--line);
+  color: var(--text);
+}
+#nav .nav-toggle .ic-collapse { display: none; }
+#nav .nav-toggle:hover { background: var(--brand-l); color: var(--brand); }
+
+/* expanded menu: wider glass panel with page names and group headings */
+#app { transition: padding-left .3s var(--ease, ease); }
+#nav { transition: width .3s var(--ease, ease); }
+
+@media (min-width: 861px) {
+  :root[data-nav="expanded"][data-theme] { --dock-w: 248px; }   /* needs the extra [data-theme] to outrank the theme file */
+  html[data-nav="expanded"] #nav { align-items: stretch; gap: 2px; padding: 10px; border-radius: 30px; }
+  html[data-nav="expanded"] #nav button {
+    width: 100%; height: 44px; display: flex; align-items: center; justify-content: flex-start; gap: 12px;
+    padding: 0 14px; border-radius: 16px; text-align: left; font-size: .92rem; font-weight: 600;
+  }
+  html[data-nav="expanded"] #nav button, html[data-nav="expanded"] #nav button:hover { transform: none; }   /* rows do not swell like the round icons */
+  html[data-nav="expanded"] #nav button .label { display: block; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  html[data-nav="expanded"] #nav button .long { display: inline; }
+  html[data-nav="expanded"] #nav button .short { display: none; }
+  html[data-nav="expanded"] #nav button::before { border-radius: 16px; }
+  html[data-nav="expanded"] #nav .glide { border-radius: 16px; }
+  html[data-nav="expanded"] #nav .count { position: static; margin: 0 0 0 auto; }
+  html[data-nav="expanded"] #nav .nav-group {
+    align-self: stretch; width: auto; height: auto; margin: 12px 0 2px; padding: 0 14px;
+    font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--side-text); opacity: .75; background: none;
+  }
+  html[data-nav="expanded"] #nav .nav-toggle { margin-bottom: 6px; }
+  html[data-nav="expanded"] #nav .nav-toggle .ic-expand { display: none; }
+  html[data-nav="expanded"] #nav .nav-toggle .ic-collapse { display: block; }
+  html[data-nav="expanded"] #dock-tip { display: none; }
+}
+
 /* page name beside a dock icon */
 #dock-tip {
   position: fixed; z-index: 70; transform: translateY(-50%); pointer-events: none;

@@ -33,6 +33,7 @@ All `/api` routes except health, login and register need `Authorization: Bearer 
 | GET | `/api/health` | – | Server and database check |
 | POST | `/api/auth/register` | – | Student sign-up (student must already be on the student list) |
 | POST | `/api/auth/login` | – | Login, returns a JWT |
+| POST | `/api/auth/logout` | Bearer | Sign out (this token stops working at once) |
 | GET | `/api/auth/me` | Bearer | Current user |
 | POST | `/api/auth/change-password` | Bearer | Change own password |
 | GET | `/api/users` | Admin | List users |
@@ -65,3 +66,69 @@ hostel-management-system/
 ├─ database/    schema.sql (optional, same tables as the migrations)
 └─ frontend/    index.html, css/, js/core/, js/pages/
 ```
+
+## Environment settings (`backend/.env`)
+
+Copy `backend/.env.example` to `backend/.env` and fill it in. Never commit `.env`.
+
+| Setting | Needed | What it does |
+|---|---|---|
+| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | Yes | PostgreSQL connection |
+| `JWT_SECRET` | Yes | Secret that signs login tokens. At least 32 random characters. Production refuses to start without it |
+| `TOKEN_HOURS` | No | How long a login lasts (default 8) |
+| `JWT_ISSUER`, `JWT_AUDIENCE` | No | Names stored inside each token (defaults are fine) |
+| `PORT` | No | Server port (default 3000) |
+| `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_NAME` | No | First administrator, created on first start. Must change the password at first sign-in |
+| `ALLOW_STUDENT_SIGNUP` | No | `false` turns off student self sign-up |
+| `NODE_ENV` | No | Set to `production` on a real server |
+
+Make a secret:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+```
+
+## Login security (JWT)
+
+- Login returns a standard JWT (HS256) with issuer, audience, issued-at, not-before, expiry and a unique id.
+- Tokens signed with another algorithm (including `none`), changed tokens, expired tokens and tokens for another issuer or audience are rejected.
+- Changing or resetting a password signs that user out everywhere.
+- Signing out cancels that exact token straight away (the list of cancelled tokens is kept in memory, so it resets when the server restarts).
+- The token is stored in the browser, so keep the site on HTTPS in production.
+- After updating from an older version, everyone signs in once more.
+
+## Using the app
+
+**Home screen.** Each role sees big buttons for what it does most. A red number on a button means something is waiting there. Staff can open "See all numbers and charts" for the full statistics.
+
+| Role | Home buttons |
+|---|---|
+| Student | Report a problem, My room, Fees & deposit, My fines, Ask for leave, Register a visitor, Notices |
+| Warden | Check a room, Report damage, Room requests, Approve visitors, Approve leave, Answer messages, Find a student |
+| Administrator | Review damage, Room requests, Fines, Fees & payments, Students, Accounts, Reports |
+| Management | Reports, Damage, Fees & payments, Fines, Maintenance, Rooms |
+| Maintenance | My repair jobs, Maintenance jobs, Alerts |
+| Security | Visitors, Students returning, Report an incident, Room keys, Lost & found |
+
+**Menu.**
+- Phone: a bottom bar with four tabs and "More" for every other page. "More" lights up when you are on a page without a tab.
+- Desktop: use the arrow button at the top of the menu to expand it (page names) or shrink it (icons). The choice is remembered. The page you open is always scrolled into view and highlighted.
+- Filter chips (Fines, Rooms and others) are one swipeable row on a phone.
+
+**Passwords.** Every password box has an eye button to show or hide what you typed.
+
+## Notes on this version
+
+- The Electricity & water page was removed. The `utility_readings` table is still in the database and holds no new data. To remove it, add a new migration with `DROP TABLE utility_readings;` (never edit an old migration).
+- No new packages were added. JWT is written with Node's built-in `crypto` (`backend/lib/jwt.js`).
+- JWT tests: `backend/tests/00-jwt.test.js`.
+
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| Server stops with "Set JWT_SECRET" | Put a random 32+ character `JWT_SECRET` in `backend/.env` |
+| "Please sign in" right after updating | Expected once: old tokens are not accepted. Sign in again |
+| Signed out every time the server restarts | `JWT_SECRET` is empty, so a new one is made each start. Set it |
+| Cannot connect to the database | Check the `DB_*` settings and that PostgreSQL is running. Open `/api/health` |
+| `npm test` fails to connect | Create the test database once: `createdb hostel_management_test` |

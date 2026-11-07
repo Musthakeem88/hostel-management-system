@@ -204,8 +204,11 @@ html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *
 
 /* ---------- Phone: the dialog slides up like a sheet ---------- */
 @media (max-width: 860px) {
-  #nav .glide { border-radius: 18px; background: var(--brand-l); border: 1px solid color-mix(in srgb, var(--brand) 30%, transparent); box-shadow: none; }
-  #nav.has-glide button.active { border-color: transparent; }
+  #nav .glide {
+    border-radius: 20px; background: var(--brand-l); border: 1px solid color-mix(in srgb, var(--brand) 32%, transparent); box-shadow: none;
+    transition: transform .38s cubic-bezier(.3, .8, .3, 1), width .3s ease, height .3s ease, opacity .2s;   /* smooth, no overshoot */
+  }
+  #nav.has-glide button.active, #nav.has-glide button.active:hover { background: none; border-color: transparent; }
   #nav button:hover { --s: 1; }
   dialog.modal[open] { animation: sheet-in .45s var(--ease); }
   @keyframes sheet-in { from { transform: translateY(100%); } to { transform: none; } }
