@@ -1,0 +1,13 @@
+# Simple hello-world workflow to confirm GitHub Actions is working.
+name: Hello
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, dev]
+
+jobs:
+  hello:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Hello from GitHub Actions"
