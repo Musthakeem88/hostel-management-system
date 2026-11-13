@@ -1,0 +1,180 @@
+/* =========================================================
+   css/responsive.css  —  tablet, phone, touch, print, motion
+   Same features everywhere; only the layout adapts.
+========================================================= */
+
+/* ---------- Large screens ---------- */
+@media (min-width: 1500px) {
+  .main { max-width: 1340px; }
+}
+
+/* ---------- Small laptops ---------- */
+@media (max-width: 1100px) {
+  :root { --dock-w: 60px; }
+}
+
+/* ---------- Tablet & phone: the dock becomes a floating glass tab bar at the bottom ---------- */
+@media (max-width: 860px) {
+  :root { --frame: 12px; }
+  #app { padding: max(10px, env(safe-area-inset-top)) var(--frame) 0; }
+
+  .top-bar { grid-template-columns: auto 1fr; margin-bottom: 14px; }
+  .pillnav { display: none; }
+  .top-tools { justify-self: end; min-width: 0; }
+
+  #nav {
+    left: var(--frame); right: var(--frame); top: auto; transform: none;
+    bottom: max(10px, env(safe-area-inset-bottom)); width: auto; max-height: none; overflow: visible;
+    flex-direction: row; align-items: stretch; justify-content: space-around; gap: 2px;
+    height: var(--nav-h); padding: 6px;
+    background: var(--sheen), var(--bar-bg); border-radius: 26px; box-shadow: var(--shadow-up);
+  }
+  /* each tab fills the bar's full inner height, so the lit shape is a clean pill that sits
+     concentric with the bar (bar radius 26px - padding 6px = 20px) */
+  #nav button {
+    flex: 1 1 0; min-width: 0; width: auto; height: auto; place-items: initial;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; padding: 4px 2px; text-align: center; border-radius: 20px;
+    font-size: .68rem; font-weight: 600; line-height: 1.1; color: var(--muted);
+    transform: none; -webkit-tap-highlight-color: transparent;
+  }
+  #nav button svg { width: 22px; height: 22px; flex: 0 0 auto; margin: 0 auto; display: block; }
+  #nav button .label { display: block; width: 100%; max-width: 100%; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #nav button .short { display: block; width: 100%; text-align: center; }
+  #nav button:hover { background: none; color: var(--muted); }
+  @media (hover: hover) { #nav button:not(.active):hover { color: var(--brand); } }   /* touch screens keep :hover after a tap */
+  #nav button::before { display: none; }                  /* no cursor glow: it washed out the lit tab on touch screens */
+  #nav button.active, #nav button.active:hover { background: var(--brand-l); color: var(--brand); box-shadow: none; border-color: transparent; }
+  #nav .long { display: none; }
+  #nav .short { display: inline; }
+  #nav .nav-group, #nav .count, #nav .nav-toggle { display: none; }
+  #nav button:not(.primary):not(#more-btn) { display: none; }
+  #nav button.primary { order: var(--o, 0); }
+  #nav #more-btn { display: flex; order: 99; }
+  #dock-tip { display: none; }
+
+  .main {
+    padding-left: 0; padding-right: 0;
+    padding-bottom: calc(var(--nav-h) + 36px + env(safe-area-inset-bottom));
+  }
+  .cols, .grid-2.wide { grid-template-columns: minmax(0, 1fr); }
+  .columns { height: 210px; }
+
+  #toast {
+    left: 16px; right: 16px; text-align: center;
+    bottom: calc(var(--nav-h) + 22px + env(safe-area-inset-bottom));
+  }
+
+  /* dialog becomes a bottom sheet */
+  dialog.modal {
+    width: 100%; max-width: 100%; margin: auto 0 0;
+    border-radius: 28px 28px 0 0; border-bottom: 0;
+    max-height: 92dvh;
+  }
+  .modal-body { padding-bottom: calc(20px + env(safe-area-inset-bottom)); max-height: 92dvh; }
+
+  /* 16px stops iOS from zooming into fields */
+  input, select, textarea { font-size: 16px; }
+}
+
+/* ---------- Phones: tables become stacked cards ---------- */
+@media (max-width: 640px) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .grid-2, .grid-3 { grid-template-columns: minmax(0, 1fr); }
+  .check-row { grid-template-columns: 1fr; }
+  .check-row .seg { justify-self: start; }
+  .toolbar input, .toolbar select { width: 100%; }
+  .user-chip #user-name { display: none; }
+  .user-chip { padding: 4px; }
+  dialog.modal.wide { width: 100%; }
+  .stat { padding: 14px 16px; }
+  .form, .items { grid-template-columns: minmax(0, 1fr); }
+  form > .btn { width: 100%; }
+  .bar { grid-template-columns: 80px 1fr auto; font-size: .88rem; }
+
+  .scroll { overflow: visible; }
+  .scroll table, .rtable { min-width: 0; }
+
+  .rtable thead {                      /* hidden visually, kept for screen readers */
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);
+  }
+  .rtable, .rtable tbody, .rtable tr, .rtable td { display: block; width: 100%; }
+  .rtable tr {
+    background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: 16px; padding: 4px 14px; margin-bottom: 10px;
+  }
+  .rtable tbody tr:hover { background: var(--surface-2); }
+  .rtable td {
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 14px;
+    padding: 9px 0; text-align: right; border-bottom: 1px dashed var(--line);
+  }
+  .rtable td:last-child { border-bottom: 0; }
+  .rtable td::before {
+    content: attr(data-label); flex: 0 0 38%; text-align: left;
+    color: var(--muted); font-weight: 600; font-size: .82rem;
+  }
+  .rtable td:not([data-label])::before { content: none; }
+  .rtable td, .rtable td.wrap { white-space: normal !important; min-width: 0; }
+  .rtable td.empty-row { display: block; text-align: center; padding: 18px 0; }
+  .rtable td select, .rtable td input { flex: 1 1 auto; width: auto; min-width: 0; }
+  .rtable td .actions { justify-content: flex-end; flex: 1 1 auto; }
+  .rtable td .actions select { flex: 1 1 120px; }
+}
+
+/* ---------- Narrow dialogs ---------- */
+@media (max-width: 480px) {
+  dl.details { grid-template-columns: 1fr; gap: 2px; }
+  dl.details dd { margin-bottom: 10px; }
+  .modal-actions .btn { flex: 1 1 auto; }
+}
+
+/* ---------- Small phones ---------- */
+@media (max-width: 360px) {
+  .stats { grid-template-columns: minmax(0, 1fr); }
+  #nav button { font-size: .58rem; padding-left: 0; padding-right: 0; }
+  #nav button span { overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+}
+
+/* ---------- Phones: filter chips are ONE swipeable row (never a wrapped, clipped blob) ---------- */
+@media (max-width: 860px) {
+  .filters, .tabs {
+    display: flex; flex-wrap: nowrap; width: 100%; max-width: 100%; box-sizing: border-box;
+    overflow-x: auto; overflow-y: hidden; border-radius: 999px; gap: 4px; padding: 5px;
+    scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+            mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+  }
+  .filters::-webkit-scrollbar, .tabs::-webkit-scrollbar { display: none; }
+  .filters button, .tabs button { flex: 0 0 auto; scroll-snap-align: center; min-height: 40px; padding: 8px 16px; white-space: nowrap; }
+}
+
+/* ---------- Touch devices: bigger tap targets, no sticky hover ---------- */
+@media (hover: none) {
+  button.btn { min-height: 44px; }
+  button.btn.small { min-height: 38px; }
+  .filters button { padding: 9px 16px; }
+  tbody tr:hover { background: none; }
+}
+
+/* ---------- Landscape phones: keep the bottom bar compact ---------- */
+@media (max-width: 860px) and (max-height: 480px) {
+  :root { --nav-h: 52px; }
+  #nav button { flex-direction: row; gap: 6px; font-size: .75rem; }
+  #nav button svg { width: 18px; height: 18px; }
+}
+
+/* ---------- Motion & print ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important; animation: none !important; scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  body { display: block; background: #fff; color: #000; }
+  body::before { display: none; }
+  .card, .stat, .top { -webkit-backdrop-filter: none; backdrop-filter: none; background: #fff; }
+  .side, #nav, #toast, .filters, button, .skip-link { display: none !important; }
+  .main { padding: 0; max-width: none; }
+  .card, .stat { box-shadow: none; break-inside: avoid; }
+}

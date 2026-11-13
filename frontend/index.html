@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1c2540">
+  <meta name="description" content="Hostel Management System">
+  <title>Hostel Management System</title>
+
+  <script src="/js/theme.js"></script>
+
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+  <link rel="stylesheet" href="/css/effects.css">
+</head>
+<body>
+  <a class="skip-link" href="#view">Skip to content</a>
+
+  <!-- ===================== Sign in / create student account ===================== -->
+  <main id="login" class="login" hidden>
+    <div class="login-card">
+      <div class="login-brand">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-6h6v6"/></svg>
+        <div><h1>Hostel Management</h1><p class="muted">University hostel rooms, items, repairs and fees</p></div>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" data-auth-tab="signin" class="active">Sign in</button>
+        <button type="button" role="tab" data-auth-tab="signup">New student</button>
+      </div>
+
+      <form id="signin-form" data-form="signin" autocomplete="on">
+        <label>Username, email or student number
+          <input name="username" autocomplete="username" required autofocus>
+        </label>
+        <label>Password
+          <input name="password" type="password" autocomplete="current-password" required>
+        </label>
+        <label class="check"><input type="checkbox" name="remember"> Keep me signed in on this device</label>
+        <p class="form-error" id="signin-error" role="alert" hidden></p>
+        <button class="btn" type="submit">Sign in</button>
+      </form>
+
+      <form id="signup-form" data-form="signup" autocomplete="on" hidden>
+        <div class="form">
+          <label>Student number *<input name="student_number" required maxlength="30"></label>
+          <label>Full name *<input name="full_name" autocomplete="name" required maxlength="120"></label>
+          <label>Email *<input name="email" type="email" autocomplete="email" required maxlength="150"></label>
+          <label>Phone<input name="phone" type="tel" autocomplete="tel" maxlength="30"></label>
+          <label>Password * <input name="password" type="password" autocomplete="new-password" required minlength="8"></label>
+        </div>
+        <p class="muted small">At least 8 characters with letters and numbers. If the hostel already registered you, use the same email.</p>
+        <p class="form-error" id="signup-error" role="alert" hidden></p>
+        <button class="btn" type="submit">Create account</button>
+      </form>
+
+      <p class="muted small login-foot">Staff accounts are created by the hostel administrator. Forgot your password? Ask the hostel office to reset it.</p>
+      <button type="button" class="btn ghost small" id="login-theme">Switch light / dark</button>
+    </div>
+  </main>
+
+  <!-- ===================== The application ===================== -->
+  <div id="app" hidden>
+    <aside class="side">
+      <h1 class="brand">Hostel Management</h1>
+      <nav id="nav" aria-label="Main"></nav>
+    </aside>
+    <div id="dock-tip" role="tooltip" hidden></div>
+
+    <main class="main">
+      <header class="top">
+        <div class="top-bar">
+          <div class="top-left">
+            <button type="button" id="menu-btn" class="icon-btn" data-action="more" aria-label="All pages" title="All pages">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+            </button>
+            <button type="button" id="theme-toggle" class="icon-btn theme-toggle" aria-label="Switch to dark mode" title="Switch to dark mode">
+              <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
+              <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            </button>
+          </div>
+          <nav id="topnav" class="pillnav" aria-label="Quick links"></nav>
+          <div class="top-tools">
+            <form id="search-form" role="search" autocomplete="off" hidden>
+              <svg class="search-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4-4"/></svg>
+              <input type="search" id="search" placeholder="Search students, rooms, items…" aria-label="Search" maxlength="60">
+              <div id="search-results" class="search-results" hidden></div>
+            </form>
+            <button type="button" id="bell" class="icon-btn" aria-label="Notifications" title="Notifications">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+              <span id="bell-count" class="count" hidden>0</span>
+            </button>
+            <button type="button" id="user-menu" class="user-chip" aria-label="Account menu">
+              <span class="avatar" id="avatar">?</span><span id="user-name"></span>
+            </button>
+          </div>
+        </div>
+        <div class="page-head">
+          <h2 id="title">Dashboard</h2>
+          <p id="subtitle" class="muted"></p>
+        </div>
+      </header>
+
+      <section id="view" tabindex="-1" aria-live="polite"></section>
+    </main>
+  </div>
+
+  <dialog id="modal" class="modal" aria-label="Details"><div id="modal-body" class="modal-body"></div></dialog>
+  <dialog id="modal2" class="modal" aria-label="Form"><div id="modal2-body" class="modal-body"></div></dialog>
+  <dialog id="lightbox" class="modal lightbox" aria-label="Photo"><button type="button" class="icon-btn" data-action="close-lightbox" aria-label="Close">&times;</button><img id="lightbox-img" alt="Photo"></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <!-- scripts run in this order and share one global scope -->
+  <script src="/js/core/config.js"></script>
+  <script src="/js/core/utils.js"></script>
+  <script src="/js/core/api.js"></script>
+  <script src="/js/core/modal.js"></script>
+  <script src="/js/core/photos.js"></script>
+  <script src="/js/core/auth.js"></script>
+
+  <script src="/js/pages/dashboard.js"></script>
+  <script src="/js/pages/myroom.js"></script>
+  <script src="/js/pages/rooms.js"></script>
+  <script src="/js/pages/students.js"></script>
+  <script src="/js/pages/items.js"></script>
+  <script src="/js/pages/inspections.js"></script>
+  <script src="/js/pages/damage.js"></script>
+  <script src="/js/pages/fines.js"></script>
+  <script src="/js/pages/repairs.js"></script>
+  <script src="/js/pages/maintenance.js"></script>
+  <script src="/js/pages/applications.js"></script>
+  <script src="/js/pages/fees.js"></script>
+  <script src="/js/pages/reports.js"></script>
+  <script src="/js/pages/notifications.js"></script>
+  <script src="/js/pages/users.js"></script>
+  <script src="/js/pages/audit.js"></script>
+  <script src="/js/pages/settings.js"></script>
+  <script src="/js/pages/profile.js"></script>
+  <script src="/js/pages/modules.js"></script>
+
+  <script src="/js/core/app.js"></script>
+  <script src="/js/effects.js"></script>
+</body>
+</html>

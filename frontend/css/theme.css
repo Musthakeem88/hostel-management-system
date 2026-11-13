@@ -1,0 +1,117 @@
+/* =========================================================
+   css/theme.css  —  "window glass" design tokens for dark (dusk) and light (daylight)
+   The theme is set on <html data-theme="light|dark"> by js/theme.js.
+   Idea: a calm view through tall windows at the back, and smoky, almost-clear glass panels
+   floating in front of it. Panels are barely tinted so the scene stays visible through them.
+========================================================= */
+
+:root,
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  /* the view behind the glass: sky, sun glow, skyline, window frames, floor (drawn by body::before) */
+  --bg: #9db7d4;
+  --scene: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 1600 900%27 preserveAspectRatio=%27xMidYMid slice%27%3E%3Cdefs%3E%3ClinearGradient id=%27s%27 x1=%270%27 y1=%270%27 x2=%270%27 y2=%271%27%3E%3Cstop offset=%270%27 stop-color=%27%2386abd6%27/%3E%3Cstop offset=%27.34%27 stop-color=%27%23a9c6e3%27/%3E%3Cstop offset=%27.55%27 stop-color=%27%23e6d8cc%27/%3E%3Cstop offset=%27.68%27 stop-color=%27%23f2c9a3%27/%3E%3Cstop offset=%271%27 stop-color=%27%23d9b49a%27/%3E%3C/linearGradient%3E%3CradialGradient id=%27g%27 cx=%27.68%27 cy=%27.6%27 r=%27.46%27%3E%3Cstop offset=%270%27 stop-color=%27%23fff0c8%27 stop-opacity=%27.95%27/%3E%3Cstop offset=%271%27 stop-color=%27%23fff0c8%27 stop-opacity=%270%27/%3E%3C/radialGradient%3E%3ClinearGradient id=%27f%27 x1=%270%27 y1=%270%27 x2=%270%27 y2=%271%27%3E%3Cstop offset=%270%27 stop-color=%27%23c3a794%27/%3E%3Cstop offset=%271%27 stop-color=%27%238f7767%27/%3E%3C/linearGradient%3E%3ClinearGradient id=%27h%27 x1=%270%27 y1=%270%27 x2=%270%27 y2=%271%27%3E%3Cstop offset=%270%27 stop-color=%27%23fff0c8%27 stop-opacity=%270%27/%3E%3Cstop offset=%27.6%27 stop-color=%27%23fff0c8%27 stop-opacity=%27.22%27/%3E%3Cstop offset=%271%27 stop-color=%27%23fff0c8%27 stop-opacity=%270%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%271600%27 height=%27900%27 fill=%27url(%23s)%27/%3E%3Crect width=%271600%27 height=%27900%27 fill=%27url(%23g)%27/%3E%3Cpath d=%27M0 560 C140 520 260 548 380 520 S600 470 760 510 S1040 560 1200 520 S1460 470 1600 510 V720 H0Z%27 fill=%27%239fb2cc%27 fill-opacity=%27.6%27/%3E%3Cpath d=%27M0 602 C180 560 300 602 460 576 S720 536 900 582 S1180 622 1340 576 S1520 560 1600 586 V730 H0Z%27 fill=%27%238a9dc0%27 fill-opacity=%27.72%27/%3E%3Cpath d=%27M0 652 C160 626 320 662 520 641 S840 611 1020 652 S1300 682 1450 641 S1560 631 1600 646 V760 H0Z%27 fill=%27%237488ae%27 fill-opacity=%27.88%27/%3E%3Crect y=%27500%27 width=%271600%27 height=%27230%27 fill=%27url(%23h)%27/%3E%3Crect y=%27690%27 width=%271600%27 height=%27210%27 fill=%27url(%23f)%27/%3E%3Cellipse cx=%27700%27 cy=%27812%27 rx=%27430%27 ry=%2762%27 fill=%27%23b69a86%27 fill-opacity=%27.8%27/%3E%3Cellipse cx=%27700%27 cy=%27776%27 rx=%27205%27 ry=%2728%27 fill=%27%238a6f60%27/%3E%3Crect x=%271200%27 y=%27640%27 width=%27400%27 height=%2784%27 rx=%2734%27 fill=%27%23dcc1aa%27/%3E%3Crect x=%271180%27 y=%27706%27 width=%27420%27 height=%27150%27 rx=%2728%27 fill=%27%23d3b59c%27/%3E%3Crect x=%271210%27 y=%27700%27 width=%27190%27 height=%2762%27 rx=%2724%27 fill=%27%23e6cdb8%27/%3E%3Crect x=%271410%27 y=%27700%27 width=%27190%27 height=%2762%27 rx=%2724%27 fill=%27%23e6cdb8%27/%3E%3Cpath d=%27M0 770 L130 704 L226 742 L120 812 Z%27 fill=%27%23c9a98f%27/%3E%3Cpath d=%27M30 780 L118 740 L168 770 L92 806 Z%27 fill=%27%23e6cdb8%27 fill-opacity=%27.7%27/%3E%3Cg fill=%27%234f7a5e%27%3E%3Cellipse cx=%271530%27 cy=%27560%27 rx=%2726%27 ry=%2796%27 transform=%27rotate(18 1530 560)%27/%3E%3Cellipse cx=%271566%27 cy=%27520%27 rx=%2724%27 ry=%2788%27 transform=%27rotate(-14 1566 520)%27/%3E%3Cellipse cx=%271496%27 cy=%27596%27 rx=%2722%27 ry=%2780%27 transform=%27rotate(36 1496 596)%27/%3E%3C/g%3E%3Cg fill=%27%235f8f6f%27%3E%3Cellipse cx=%271556%27 cy=%27608%27 rx=%2722%27 ry=%2778%27 transform=%27rotate(-30 1556 608)%27/%3E%3Cellipse cx=%271514%27 cy=%27520%27 rx=%2720%27 ry=%2770%27 transform=%27rotate(6 1514 520)%27/%3E%3C/g%3E%3Cg fill=%27%235a4a44%27 fill-opacity=%27.34%27%3E%3Crect x=%270%27 y=%270%27 width=%271600%27 height=%2784%27/%3E%3Crect x=%27318%27 y=%270%27 width=%2726%27 height=%27704%27/%3E%3Crect x=%27778%27 y=%270%27 width=%2726%27 height=%27704%27/%3E%3Crect x=%271238%27 y=%270%27 width=%2726%27 height=%27704%27/%3E%3Crect x=%270%27 y=%27300%27 width=%27318%27 height=%2714%27/%3E%3Crect x=%271264%27 y=%27300%27 width=%27336%27 height=%2714%27/%3E%3Crect x=%270%27 y=%27690%27 width=%271600%27 height=%2718%27/%3E%3C/g%3E%3Cg fill=%27%23ffffff%27 fill-opacity=%27.07%27%3E%3Crect x=%27344%27 y=%2784%27 width=%273%27 height=%27620%27/%3E%3Crect x=%27804%27 y=%2784%27 width=%273%27 height=%27620%27/%3E%3Crect x=%271264%27 y=%2784%27 width=%273%27 height=%27620%27/%3E%3C/g%3E%3C/svg%3E") center / cover no-repeat;
+
+  /* glass */
+  --surface: rgba(255, 255, 255, .40);       /* cards, stat tiles */
+  --surface-2: rgba(20, 32, 46, .07);        /* table head, hover, chips */
+  --field: rgba(255, 255, 255, .55);         /* inputs and selects */
+  --pop: rgba(246, 249, 252, .92);           /* dialogs and drop-down panels */
+  --side-bg: rgba(255, 255, 255, .36);       /* sidebar */
+  --bar-bg: rgba(250, 252, 255, .80);        /* phone tab bar */
+  --edge: rgba(255, 255, 255, .72);          /* bright rim of the glass */
+  --sheen: linear-gradient(160deg, rgba(255, 255, 255, .38), rgba(255, 255, 255, 0) 40%);
+  --blur: blur(26px) saturate(150%) brightness(1.04);
+  --line: rgba(20, 32, 46, .12);
+  --line-strong: rgba(20, 32, 46, .26);
+  --text: #101c2a;
+  --muted: #3f566c;
+
+  --brand: #1f5fe0;
+  --brand-d: #174cb8;
+  --brand-l: rgba(31, 95, 224, .14);
+  --brand-2: #3b82f6;
+  --brand-glow: rgba(31, 95, 224, .32);
+  --on-brand: #ffffff;
+  --focus: #1f5fe0;
+
+  --amber: #8f5300;  --amber-l: rgba(224, 150, 20, .24);  --notice-text: #5c3800;
+  --red: #b3261e;    --red-l: rgba(214, 48, 36, .15);
+  --green: #17693a;  --green-l: rgba(31, 140, 70, .20);
+  --purple: #6b3fd0; --purple-l: rgba(124, 77, 232, .18);
+  --blue: #1f5fe0;   --blue-l: rgba(31, 95, 224, .16);
+
+  --pill-on: rgba(16, 28, 42, .86);
+  --col-fill: linear-gradient(180deg, rgba(40, 60, 90, .34), rgba(40, 60, 90, .20));
+  --side-text: #2f465c;
+  --side-hover: rgba(20, 32, 46, .08);
+
+  --toast-bg: rgba(16, 28, 42, .92);
+  --toast-text: #ffffff;
+
+  --shadow-sm: 0 14px 38px rgba(30, 50, 80, .18), inset 0 1px 0 rgba(255, 255, 255, .75);
+  --shadow-md: 0 26px 70px rgba(25, 45, 75, .32), inset 0 1px 0 rgba(255, 255, 255, .85);
+  --shadow-up: 0 14px 36px rgba(25, 45, 75, .28), inset 0 1px 0 rgba(255, 255, 255, .8);
+
+  --r: 14px;
+  --r-lg: 26px;
+  --dock-w: 64px;
+  --frame: 16px;                             /* gap between the floating glass panes */
+  --gap: clamp(12px, 1.8vw, 18px);
+  --pad: clamp(4px, 1vw, 8px);
+  --nav-h: 64px;                             /* height of the phone bottom bar */
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #1b2238;
+  --scene: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 1600 900%27 preserveAspectRatio=%27xMidYMid slice%27%3E%3Cdefs%3E%3ClinearGradient id=%27s%27 x1=%270%27 y1=%270%27 x2=%270%27 y2=%271%27%3E%3Cstop offset=%270%27 stop-color=%27%23232c4a%27/%3E%3Cstop offset=%27.34%27 stop-color=%27%234b4a72%27/%3E%3Cstop offset=%27.55%27 stop-color=%27%23a77f8a%27/%3E%3Cstop offset=%27.68%27 stop-color=%27%23e0996f%27/%3E%3Cstop offset=%271%27 stop-color=%27%236b4a48%27/%3E%3C/linearGradient%3E%3CradialGradient id=%27g%27 cx=%27.68%27 cy=%27.6%27 r=%27.46%27%3E%3Cstop offset=%270%27 stop-color=%27%23ffc58a%27 stop-opacity=%27.95%27/%3E%3Cstop offset=%271%27 stop-color=%27%23ffc58a%27 stop-opacity=%270%27/%3E%3C/radialGradient%3E%3ClinearGradient id=%27f%27 x1=%270%27 y1=%270%27 x2=%270%27 y2=%271%27%3E%3Cstop offset=%270%27 stop-color=%27%233b2a24%27/%3E%3Cstop offset=%271%27 stop-color=%27%23140d0c%27/%3E%3C/linearGradient%3E%3ClinearGradient id=%27h%27 x1=%270%27 y1=%270%27 x2=%270%27 y2=%271%27%3E%3Cstop offset=%270%27 stop-color=%27%23ffc58a%27 stop-opacity=%270%27/%3E%3Cstop offset=%27.6%27 stop-color=%27%23ffc58a%27 stop-opacity=%27.22%27/%3E%3Cstop offset=%271%27 stop-color=%27%23ffc58a%27 stop-opacity=%270%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%271600%27 height=%27900%27 fill=%27url(%23s)%27/%3E%3Crect width=%271600%27 height=%27900%27 fill=%27url(%23g)%27/%3E%3Cpath d=%27M0 560 C140 520 260 548 380 520 S600 470 760 510 S1040 560 1200 520 S1460 470 1600 510 V720 H0Z%27 fill=%27%238d7391%27 fill-opacity=%27.6%27/%3E%3Cpath d=%27M0 602 C180 560 300 602 460 576 S720 536 900 582 S1180 622 1340 576 S1520 560 1600 586 V730 H0Z%27 fill=%27%236a5880%27 fill-opacity=%27.72%27/%3E%3Cpath d=%27M0 652 C160 626 320 662 520 641 S840 611 1020 652 S1300 682 1450 641 S1560 631 1600 646 V760 H0Z%27 fill=%27%234b3d5e%27 fill-opacity=%27.88%27/%3E%3Crect y=%27500%27 width=%271600%27 height=%27230%27 fill=%27url(%23h)%27/%3E%3Crect y=%27690%27 width=%271600%27 height=%27210%27 fill=%27url(%23f)%27/%3E%3Cellipse cx=%27700%27 cy=%27812%27 rx=%27430%27 ry=%2762%27 fill=%27%234a3830%27 fill-opacity=%27.8%27/%3E%3Cellipse cx=%27700%27 cy=%27776%27 rx=%27205%27 ry=%2728%27 fill=%27%232a1d19%27/%3E%3Crect x=%271200%27 y=%27640%27 width=%27400%27 height=%2784%27 rx=%2734%27 fill=%27%237a604c%27/%3E%3Crect x=%271180%27 y=%27706%27 width=%27420%27 height=%27150%27 rx=%2728%27 fill=%27%236a5342%27/%3E%3Crect x=%271210%27 y=%27700%27 width=%27190%27 height=%2762%27 rx=%2724%27 fill=%27%238a6f58%27/%3E%3Crect x=%271410%27 y=%27700%27 width=%27190%27 height=%2762%27 rx=%2724%27 fill=%27%238a6f58%27/%3E%3Cpath d=%27M0 770 L130 704 L226 742 L120 812 Z%27 fill=%27%237a5a44%27/%3E%3Cpath d=%27M30 780 L118 740 L168 770 L92 806 Z%27 fill=%27%238a6f58%27 fill-opacity=%27.7%27/%3E%3Cg fill=%27%231f3a2c%27%3E%3Cellipse cx=%271530%27 cy=%27560%27 rx=%2726%27 ry=%2796%27 transform=%27rotate(18 1530 560)%27/%3E%3Cellipse cx=%271566%27 cy=%27520%27 rx=%2724%27 ry=%2788%27 transform=%27rotate(-14 1566 520)%27/%3E%3Cellipse cx=%271496%27 cy=%27596%27 rx=%2722%27 ry=%2780%27 transform=%27rotate(36 1496 596)%27/%3E%3C/g%3E%3Cg fill=%27%232b4d39%27%3E%3Cellipse cx=%271556%27 cy=%27608%27 rx=%2722%27 ry=%2778%27 transform=%27rotate(-30 1556 608)%27/%3E%3Cellipse cx=%271514%27 cy=%27520%27 rx=%2720%27 ry=%2770%27 transform=%27rotate(6 1514 520)%27/%3E%3C/g%3E%3Cg fill=%27%23120c0b%27 fill-opacity=%27.92%27%3E%3Crect x=%270%27 y=%270%27 width=%271600%27 height=%2784%27/%3E%3Crect x=%27318%27 y=%270%27 width=%2726%27 height=%27704%27/%3E%3Crect x=%27778%27 y=%270%27 width=%2726%27 height=%27704%27/%3E%3Crect x=%271238%27 y=%270%27 width=%2726%27 height=%27704%27/%3E%3Crect x=%270%27 y=%27300%27 width=%27318%27 height=%2714%27/%3E%3Crect x=%271264%27 y=%27300%27 width=%27336%27 height=%2714%27/%3E%3Crect x=%270%27 y=%27690%27 width=%271600%27 height=%2718%27/%3E%3C/g%3E%3Cg fill=%27%23ffffff%27 fill-opacity=%27.07%27%3E%3Crect x=%27344%27 y=%2784%27 width=%273%27 height=%27620%27/%3E%3Crect x=%27804%27 y=%2784%27 width=%273%27 height=%27620%27/%3E%3Crect x=%271264%27 y=%2784%27 width=%273%27 height=%27620%27/%3E%3C/g%3E%3C/svg%3E") center / cover no-repeat;
+
+  --surface: rgba(30, 28, 38, .40);
+  --surface-2: rgba(255, 255, 255, .07);
+  --field: rgba(10, 10, 16, .36);
+  --pop: rgba(26, 25, 34, .90);
+  --side-bg: rgba(30, 28, 38, .36);
+  --bar-bg: rgba(24, 23, 32, .78);
+  --edge: rgba(255, 255, 255, .17);
+  --sheen: linear-gradient(160deg, rgba(255, 255, 255, .12), rgba(255, 255, 255, 0) 38%);
+  --blur: blur(28px) saturate(145%) brightness(.84);
+  --line: rgba(255, 255, 255, .11);
+  --line-strong: rgba(255, 255, 255, .24);
+  --text: #f6f3f8;
+  --muted: #c3bdcc;
+
+  --brand: #5b9bff;
+  --brand-d: #8bb8ff;
+  --brand-l: rgba(91, 155, 255, .20);
+  --brand-2: #2f6df6;
+  --brand-glow: rgba(70, 130, 255, .38);
+  --on-brand: #ffffff;
+  --focus: #8bb8ff;
+
+  --amber: #f6c35b;  --amber-l: rgba(246, 195, 91, .18);  --notice-text: #f8dc9b;
+  --red: #ff9a90;    --red-l: rgba(255, 120, 108, .18);
+  --green: #74e3a6;  --green-l: rgba(110, 231, 161, .17);
+  --purple: #c0a6ff; --purple-l: rgba(168, 130, 255, .22);
+  --blue: #8bb8ff;   --blue-l: rgba(91, 155, 255, .22);
+
+  --pill-on: rgba(6, 6, 12, .74);
+  --col-fill: linear-gradient(180deg, rgba(255, 255, 255, .36), rgba(255, 255, 255, .16));
+  --side-text: #d2cdda;
+  --side-hover: rgba(255, 255, 255, .09);
+
+  --toast-bg: rgba(246, 243, 248, .95);
+  --toast-text: #1b2238;
+
+  --shadow-sm: 0 16px 44px rgba(0, 0, 0, .36), inset 0 1px 0 rgba(255, 255, 255, .11);
+  --shadow-md: 0 28px 74px rgba(0, 0, 0, .58), inset 0 1px 0 rgba(255, 255, 255, .13);
+  --shadow-up: 0 16px 40px rgba(0, 0, 0, .52), inset 0 1px 0 rgba(255, 255, 255, .11);
+}
+
+/* Browsers without backdrop-filter get calmer, more solid panels so text stays readable */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root, :root[data-theme="light"] { --surface: rgba(255, 255, 255, .88); --side-bg: rgba(255, 255, 255, .9); }
+  :root[data-theme="dark"] { --surface: #1d1c27; --side-bg: #181720; --field: #12121a; }
+}
